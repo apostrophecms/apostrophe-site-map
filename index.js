@@ -27,6 +27,8 @@ function Construct(options, callback) {
       var criteria = {};
       var today = self.today = moment().format('YYYY-MM-DD');
       var req = self.req = self._apos.getTaskReq();
+      // General public, not admin
+      req.user.permissions = {};
       var excludeTypes = self.excludeTypes = options.excludeTypes || [];
 
       self.output = output;

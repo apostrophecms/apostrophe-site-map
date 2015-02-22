@@ -108,6 +108,8 @@ factory.Construct = function(options, callback) {
 };
 ```
 
+Also consider using `self.req` as your `req` object. This object does *not* have admin privileges. You don't want admin-only URLs in a sitemap.
+
 ## Content strategy
 
 You can also use this module just to generate a map of your site for your own study:
