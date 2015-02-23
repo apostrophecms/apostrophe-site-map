@@ -157,6 +157,10 @@ You may specify multiple page types to exclude, separated by commas.
 
 There's a hard limit on the number of documents MongoDB will sort for you (TODO: figure out why adding an index solves this in the mongo shell but not in this task). Exclude more types.
 
+## Compatibility
+
+Currently supports both A2 0.4 and A2 0.5 sites.
+
 ## License
 
 Copyright (c) 2015 P'unk Avenue LLC
