@@ -1,3 +1,7 @@
+## Currently for A2 0.5.x sites only
+
+This module is currently for A2 0.5.x sites only. It has not yet been ported to A2 2.x.
+
 # apostrophe-site-map
 
 This module generates XML and plaintext sitemaps for sites powered by the [Apostrophe](https://apostrophenow.org) CMS.
