@@ -1,84 +1,65 @@
-/* jshint node:true */
-
+var moment = require('moment');
 var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
-var moment = require('moment');
-module.exports = factory;
 
-function factory(options, callback) {
-  return new Construct(options, callback);
-}
+module.exports = {
+  afterConstruct: function(self) {
+    self.apos.tasks.add(self.__meta.name, 'map', self.map);
+  },
+  
+  construct: function(self, options) {
 
-function Construct(options, callback) {
-  var self = this;
-  // Add a bunch of methods to self here, then...
-
-  self._apos = options.apos;
-  self._pages = options.pages;
-
-  self._apos.on('tasks:register', function(taskGroups) {
-    taskGroups.apostrophe.siteMap = function(site, apos, argv, callback) {
-      var format = self.format = argv.format || 'xml';
-      var indent = self.indent = !!argv.indent;
-      var file = self.file = argv.file || '/dev/stdout';
-      var out = self.out = fs.openSync(file, 'w');
-      var home;
+    self.map = function(apos, argv, callback) {
+      
+      if (!apos.options.baseUrl) {
+        return callback(new Error(
+          'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
+          'to use this task. Example: baseUrl: "http://mycompany.com"\n\n' +
+          'Note there is NO TRAILING SLASH.\n\n' +
+          'Usually you will only do this in data/local.js, on production.'
+        ));
+      }
       var criteria = {};
-      var today = self.today = moment().format('YYYY-MM-DD');
-      var req = self.req = self._apos.getTaskReq();
-      // General public, not admin
+      var req = self.apos.tasks.getReq();
+      self.format = argv.format || 'xml';
+      self.indent = !!argv.indent;
+      self.file = argv.file || '/dev/stdout';
+      self.out = fs.openSync(self.file, 'w');
+      self.today = moment().format('YYYY-MM-DD');
+      // General public view, not admin
       req.user.permissions = {};
-      var excludeTypes = self.excludeTypes = options.excludeTypes || [];
-
-      self.output = output;
+      self.excludeTypes = options.excludeTypes || [];
 
       if (argv['exclude-types']) {
-        excludeTypes = excludeTypes.concat(argv['exclude-types'].split(','));
+        self.excludeTypes = excludeTypes.concat(argv['exclude-types'].split(','));
         criteria.type = { $nin: excludeTypes };
       }
-      if (format === 'xml') {
-        fs.writeSync(out, '<?xml version="1.0" encoding="UTF-8"?>\n');
-        fs.writeSync(out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n');
+      if (self.format === 'xml') {
+        fs.writeSync(self.out, '<?xml version="1.0" encoding="UTF-8"?>\n');
+        fs.writeSync(self.out, '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n');
       }
-      var host = site.hostName;
-      if (!host.match(/^https?:/)) {
-        host = 'http://' + host;
-      }
-      self.host = host;
       return async.series({
         home: function(callback) {
-          return apos.pages.findOne({ slug: '/' }, function(err, page) {
+          return apos.pages.find(req, { slug: '/' }).children({ depth: 20 }).toObject(function(err, page) {
             if (err) {
               return callback(err);
             }
             if (!page) {
               return callback('no homepage');
             }
-            home = page;
+            self.home = page;
             return callback(null);
           });
         },
-        pages: function(callback) {
-          return self._pages.getDescendants(req, home, criteria, { orphan: null, depth: 20, fields: { slug: 1, path: 1, rank: 1, level: 1 } }, function(err, children) {
-            home.children = children;
-            return callback(err);
+        pieces: function(callback) {
+          var modules = _.filter(apos.modules, function(module, name) {
+            return _.find(module.__meta.chain, function(entry) {
+              return entry.name === 'apostrophe-pieces';
+            });
           });
-        },
-        snippets: function(callback) {
-          return async.eachSeries(self._pages.types, function(type, callback) {
-            if (!_.find(type._modules || [], function(m) {
-              return m.name === 'snippets';
-            })) {
-              // Not derived from snippets
-              return setImmediate(callback);
-            }
-            // You can ignore either the index or the instance,
-            // same result
-            if (_.contains(excludeTypes, type.name)) {
-              return setImmediate(callback);
-            }
-            if (_.contains(excludeTypes, type._instance)) {
+          return async.eachSeries(modules, function(module, callback) {
+            if (_.contains(self.excludeTypes, module.name)) {
               return setImmediate(callback);
             }
             // Paginate through 100 at a time to
@@ -88,82 +69,66 @@ function Construct(options, callback) {
             return async.whilst(
               function() { return !done; },
               function(callback) {
-              return type.get(req, { published: true }, { permalink: true, withJoins: false, areas: false, skip: skip, limit: 100 }, function(err, results) {
-                _.each(results.snippets, function(snippet) {
-                  if (!snippet.url) {
+              return module.find(req).published(true).joins(false).areas(false).skip(skip).limit(100).toArray(function(err, pieces) {
+                _.each(pieces, function(piece) {
+                  if (!piece._url) {
                     // This one has no page to be viewed on
                     return;
                   }
-                  snippet.url = host + snippet.url;
                   // Results in a reasonable priority relative
                   // to regular pages
-                  snippet.level = 3;
+                  piece.level = 3;
                   // Future events are interesting,
                   // past events are boring
-                  if (snippet.startDate) {
-                    if (snippet.startDate > today) {
-                      snippet.level--;
+                  if (piece.startDate) {
+                    if (piece.startDate > self.today) {
+                      piece.level--;
                     } else {
-                      snippet.level++;
+                      piece.level++;
                     }
                   }
-                  output(snippet, true);
+                  self.output(piece, true);
                 });
-                if (!results.snippets.length) {
+                if (!pieces.length) {
                   done = true;
                 } else {
-                  skip += results.snippets.length;
+                  skip += pieces.length;
                 }
                 return callback(null);
               });
             }, callback);
           }, callback);
-        },
-        custom: function(callback) {
-          return self.custom(site, apos, argv, callback);
         }
       }, function(err) {
         if (err) {
           return callback(err);
         }
-        output(home);
-        if (format === 'xml') {
-          fs.writeSync(out, '</urlset>\n');
+        self.output(self.home);
+        if (self.format === 'xml') {
+          fs.writeSync(self.out, '</urlset>\n');
         }
-        fs.closeSync(out);
+        fs.closeSync(self.out);
         return callback(null);
       });
-      function output(page, trustUrl) {
-        if (format === 'text') {
-          if (indent) {
-            var i;
-            for (i = 0; (i < page.level); i++) {
-              fs.writeSync(out, '  ');
-            }
-          }
-          fs.writeSync(out, page.slug);
-        } else {
-          var url = (trustUrl && page.url) || (host + (site.prefix || '') + page.slug);
-          fs.writeSync(out, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
-        }
-        _.each(page.children, function(page) {
-          output(page);
-        });
-      }
     };
-  });
 
-  self.custom = function(site, apos, argv, callback) {
-    return setImmediate(callback);
-  };
-
-  if (callback) {
-    // Invoke the callback. This must happen on next tick or later!
-    return process.nextTick(function() {
-      return callback(null);
-    });
+    self.output = function(page, trustUrl) {
+      var url;
+      if (self.format === 'text') {
+        if (self.indent) {
+          var i;
+          for (i = 0; (i < page.level); i++) {
+            fs.writeSync(out, '  ');
+          }
+        }
+        fs.writeSync(out, page.slug);
+      } else {
+        url = page._url;
+        fs.writeSync(self.out, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
+      }
+      _.each(page.children, function(page) {
+        output(page);
+      });
+    };
   }
-}
-
-// Export the constructor so others can subclass
-factory.Construct = Construct;
+};
