@@ -127,7 +127,7 @@ module.exports = {
         fs.writeSync(self.out, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
       }
       _.each(page._children, function(page) {
-        output(page);
+        self.output(page);
       });
     };
   }
