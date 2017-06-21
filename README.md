@@ -26,8 +26,8 @@ To generate a content strategy map of your site:
 
 ```javascript
   {
-    apostrophe-site-map: {
-      // array of page types you do NOT want
+    'apostrophe-site-map': {
+      // array of doc types you do NOT want
       // to include, even though they are
       // accessible on the site. You can also
       // do this at the command line
@@ -81,30 +81,18 @@ Here's a simple example. Note the use of `self.host` to get the "stem" of the UR
 For regular pages in the page tree, `level` starts at `0` (the home page) and increments from there for nested pages. For your own "pages," just keep that in mind. The higher the `level`, the lower the `priority` will be in the XML sitemap.
 
 ```javascript
-module.exports = factory;
-
-function factory(options, callback) {
-  return new factory.Construct(options, callback);
-}
-
-factory.Construct = function(options, callback) {
-  var self = this;
-
-  module.exports.Super.call(this, options, null);
-
-  self.custom = function(site, apos, argv, callback) {
-    self.output({
-      url: self.host + '/myspecialplace',
-      level: 4
-    });
-    return callback(null);
-  };
-
-  // Must wait at least until next tick to invoke callback!
-  if (callback) {
-    process.nextTick(function() { return callback(null); });
+// lib/modules/apostrophe-site-map/index.js, at project level, not in node_modules
+module.exports = {
+  construct: function(self, options) {
+    self.custom = function(callback) {
+      // Discover something via the database, then...
+      self.output({
+        _url: 'http://mysite.com/myspecialplace',
+        priority: 0.5
+      });
+      return callback(null);
+    };
   }
-
 };
 ```
 

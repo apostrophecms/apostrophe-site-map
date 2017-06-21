@@ -87,7 +87,7 @@ module.exports = {
                       piece.level++;
                     }
                   }
-                  self.output(piece, true);
+                  self.output(piece);
                 });
                 if (!pieces.length) {
                   done = true;
@@ -98,6 +98,9 @@ module.exports = {
               });
             }, callback);
           }, callback);
+        },
+        custom: function(callback) {
+          return self.custom(callback);
         }
       }, function(err) {
         if (err) {
@@ -111,17 +114,24 @@ module.exports = {
         return callback(null);
       });
     };
+    
+    // Override to do more. You can invoke `self.output(doc)`
+    // from here as many times as you like.
 
-    self.output = function(page, trustUrl) {
+    self.custom = function(callback) {
+      return callback(null);
+    };
+
+    self.output = function(page) {
       var url;
       if (self.format === 'text') {
         if (self.indent) {
           var i;
           for (i = 0; (i < page.level); i++) {
-            fs.writeSync(out, '  ');
+            fs.writeSync(self.out, '  ');
           }
         }
-        fs.writeSync(out, page.slug);
+        fs.writeSync(self.out, page._url + '\n');
       } else {
         url = page._url;
         fs.writeSync(self.out, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
