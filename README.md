@@ -43,13 +43,13 @@ To generate a content strategy map of your site:
 3. Run the task:
 
 ```
-node app apostrophe:site-map
+node app apostrophe-site-map:map
 ```
 
 This generates an XML sitemap and displays it on the console. You can publish it by specifying a location in your project's `public` folder:
 
 ```
-node app apostrophe:site-map --file=public/sitemap.xml
+node app apostrophe-site-map:map --file=public/sitemap.xml
 ```
 
 **Hint:** set up a cron job to do this nightly.
