@@ -25,15 +25,21 @@ To generate a content strategy map of your site:
 2. Configure it in `app.js`, as one of your modules.
 
 ```javascript
-  {
-    'apostrophe-site-map': {
-      // array of doc types you do NOT want
-      // to include, even though they are
-      // accessible on the site. You can also
-      // do this at the command line
-      excludeTypes: []
+{
+  // You should configure `baseUrl` to ensure full URLs in your sitemap
+  baseUrl: 'http://example.com',
+  modules: {
+    {
+      'apostrophe-site-map': {
+        // array of doc types you do NOT want
+        // to include, even though they are
+        // accessible on the site. You can also
+        // do this at the command line
+        excludeTypes: []
+      }
     }
   }
+}
 ```
 
 3. Run the task:
@@ -72,7 +78,7 @@ It'll list your published pages, and your published snippets. And it'll rank fut
 
 But it doesn't know anything about the custom URLs, independent of the page tree, that you're generating in your own creative and amazing modules.
 
-If that's a concern for you, create `lib/modules/apostrophe-site-map/index.js` in your project, subclass the module, and override the `custom` method to output information about additional URLs.
+If that's a concern for you, create `lib/modules/apostrophe-site-map/index.js` in your project, subclass the module, and override the `custom` method to output information about additional URLs. *Note: if you have multiple locales via `apostrophe-workflow` this method is called more than once.* This method now receives `req, locale, callback` if written to accept three arguments.
 
 It's straightforward: all you have to do is pass Apostrophe page objects, or anything else with a `url` property and a `level` property, to `self.output`.
 
@@ -84,7 +90,7 @@ For regular pages in the page tree, `level` starts at `0` (the home page) and in
 // lib/modules/apostrophe-site-map/index.js, at project level, not in node_modules
 module.exports = {
   construct: function(self, options) {
-    self.custom = function(callback) {
+    self.custom = function(req, locale, callback) {
       // Discover something via the database, then...
       self.output({
         _url: 'http://mysite.com/myspecialplace',
@@ -138,6 +144,14 @@ Or do it in `app.js` when configuring the module:
 ```
 
 You may specify multiple page types to exclude, separated by commas.
+
+## Integration with the `apostrophe-workflow` module
+
+If you are using the `apostrophe-workflow` module, the sitemap module will automatically fetch content for the live versions of all configured locales.
+
+By default, it will be emitted as a single sitemap. [According to Google, this is OK, although you must claim all of the sites under a single identity in the webmaster console.](https://support.google.com/webmasters/answer/75712?hl=en) However, if you would prefer a separate sitemap file for each hostname found in the absolute URLs, you can pass the `--per-locale` option. If you do so, a `public/sitemaps` folder is created and populated with sitemaps for each workflow locale, and a `public/sitemaps/index.xml` file is also created, containing a [sitemap index file](https://support.google.com/webmasters/answer/75712?hl=en). You should submit the index file to Google, not all of the individual sitemaps. Again, you must claim all of the sites under a single identity.
+
+If `--per-locale` is used, the `--file` option is ignored.
 
 ## If you get an error
 
