@@ -5,6 +5,12 @@ var fs = require('fs');
 var url = require('url');
 
 module.exports = {
+
+  moogBundle: {
+    modules: [ 'apostrophe-site-map-custom-pages', 'apostrophe-site-map-pieces' ],
+    directory: 'lib/modules'
+  },
+
   afterConstruct: function(self) {
     self.apos.tasks.add(self.__meta.name, 'map', self.map);
   },
@@ -240,7 +246,11 @@ module.exports = {
         }
       } else {
         url = page._url;
-        self.write(locale, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
+        var priority = (1.0 - page.level / 10);
+        if (typeof(page.siteMapPriority) === 'number') {
+          priority = page.siteMapPriority;
+        }
+        self.write(locale, '  <url><priority>' + priority + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
       }
       _.each(page._children || [], function(page) {
         self.output(page);
