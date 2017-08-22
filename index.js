@@ -18,8 +18,8 @@ module.exports = {
   },
 
   afterConstruct: function(self) {
-    self.apos.tasks.add(self.__meta.name, 'map', self.mapTask, 'Generate a sitemap from the command line.');
-    self.apos.tasks.add(self.__meta.name, 'clear', self.clearTask, 'Clear the sitemap cache.');
+    self.apos.tasks.add(self.__meta.name, 'map', self.mapTask);
+    self.apos.tasks.add(self.__meta.name, 'clear', self.clearTask);
     self.addRoutes();
     self.enableCache();
   },

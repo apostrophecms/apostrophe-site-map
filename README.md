@@ -204,6 +204,8 @@ If the `perLocale` option is set to `true` for the module or the `--per-locale` 
 
 ## Changelog
 
+2.1.1: short-lived bug affecting command line tasks.
+
 2.1.0: sitemaps are now served dynamically. They are stored in Apostrophe's cache for a configurable period of time. There is no need to run a command line task, or mess around with static files. Please note that you must remove existing static sitemap files first. See the documentation for important recommendations. Thanks to Michelin for their support of this work.
 
 The documentation has also been overhauled thoroughly to be completely accurate for Apostrophe 2.x.
