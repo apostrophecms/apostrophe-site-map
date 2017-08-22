@@ -6,21 +6,40 @@ var url = require('url');
 
 module.exports = {
 
+  // Cache sitemaps for 1 hour by default. Depending on pagerank
+  // Google may look at your sitemap somewhere between daily and
+  // monthly, so don't get your hopes up too far about changing this
+  
+  cacheLifetime: 60 * 60,
+
   moogBundle: {
     modules: [ 'apostrophe-site-map-custom-pages', 'apostrophe-site-map-pieces' ],
     directory: 'lib/modules'
   },
 
   afterConstruct: function(self) {
-    self.apos.tasks.add(self.__meta.name, 'map', self.map);
+    self.apos.tasks.add(self.__meta.name, 'map', self.mapTask, 'Generate a sitemap from the command line.');
+    self.apos.tasks.add(self.__meta.name, 'clear', self.clearTask, 'Clear the sitemap cache.');
+    self.addRoutes();
+    self.enableCache();
   },
   
   construct: function(self, options) {
 
-    self.map = function(apos, argv, callback) {
+    self.caching = true;
+    
+    self.cacheLifetime = options.cacheLifetime;
+    
+    self.clearTask = function(apos, argv, callback) {
+      // Just forget the current sitemaps to make room
+      // for regeneration on the next request
+      return self.cache.clear(callback);
+    };
+    
+    self.mapTask = function(apos, argv, callback) {
 
-      self.workflow = self.apos.modules['apostrophe-workflow'];
-      
+      self.caching = false;
+            
       if (!apos.options.baseUrl) {
         return callback(new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
@@ -29,47 +48,96 @@ module.exports = {
           'Usually you will only do this in data/local.js, on production.'
         ));
       }
-      var criteria = {};
-      self.format = argv.format || 'xml';
-      self.indent = !!argv.indent;
-      self.maps = {};
-      self.today = moment().format('YYYY-MM-DD');
-      self.excludeTypes = options.excludeTypes || [];
+      
+      return self.map(callback);
+    };
+    
+    self.map = function(callback) {
+
+      self.workflow = self.apos.modules['apostrophe-workflow'];
+      
+      var argv = self.apos.argv;
 
       if (argv['exclude-types']) {
         self.excludeTypes = excludeTypes.concat(argv['exclude-types'].split(','));
-        criteria.type = { $nin: excludeTypes };
-      }
-      
-      var locales = [ 'default' ];
-      
-      if (self.workflow) {
-        locales = _.filter(_.keys(self.workflow.locales), function(locale) {
-          return !locale.match(/\-draft$/);
-        });
       }
 
-      return async.eachSeries(locales, function(locale, callback) {
-        var req = self.apos.tasks.getAnonReq();
-        req.locale = locale;
-        return async.series([
-          _.partial(self.getPages, req, locale),
-          _.partial(self.getPieces, req, locale),
-          function(callback) {
-            if (self.custom.length === 1) {
-              return self.custom(callback);
-            } else {
-              return self.custom(req, locale, callback);
-            }
-          }
-        ], callback);
-      }, function(err) {
-        if (err) {
-          return callback(err);
+      if (self.caching) {
+        self.cacheOutput = [];
+      }
+      return async.series([
+        lock,
+        init,
+        map,
+        write,
+        unlock
+      ], callback);
+
+      function lock(callback) {
+        return self.apos.locks.lock('apostrophe-site-map', callback);
+      }
+      
+      function init(callback) {
+        self.format = argv.format || options.format || 'xml';
+        
+        self.indent = (typeof(argv.indent) !== undefined) ? argv.indent : options.indent;
+        self.excludeTypes = options.excludeTypes || [];
+        self.perLocale = options.perLocale || argv['per-locale'];
+        // Exception: plaintext sitemaps and sitemap indexes don't go
+        // together, so we can presume that if they explicitly ask 
+        // for plaintext they are just doing content strategy and we
+        // should produce a single report
+        if (self.format === 'text') {
+          self.perLocale = false;
         }
-        self.writeSitemap();
         return callback(null);
-      });
+      }
+      
+      function map(callback) {
+        var criteria = {};
+
+        self.maps = {};
+        self.today = moment().format('YYYY-MM-DD');
+
+        criteria.type = { $nin: self.excludeTypes };
+        
+        var locales = [ 'default' ];
+        
+        if (self.workflow) {
+          locales = _.filter(_.keys(self.workflow.locales), function(locale) {
+            return !locale.match(/\-draft$/);
+          });
+        }
+
+        return async.eachSeries(locales, function(locale, callback) {
+          var req = self.apos.tasks.getAnonReq();
+          req.locale = locale;
+          return async.series([
+            _.partial(self.getPages, req, locale),
+            _.partial(self.getPieces, req, locale),
+            function(callback) {
+              if (self.custom.length === 1) {
+                return self.custom(callback);
+              } else {
+                return self.custom(req, locale, callback);
+              }
+            }
+          ], callback);
+        }, function(err) {
+          if (err) {
+            return callback(err);
+          }
+          return callback(null);
+        });
+      }
+      
+      function write(callback) {
+        return self.writeSitemap(callback);
+      }
+      
+      function unlock(callback) {
+        return self.apos.locks.unlock('apostrophe-site-map', callback);
+      }
     };
 
     self.getPages = function(req, locale, callback) {
@@ -133,35 +201,44 @@ module.exports = {
       }, callback);
     };
         
-    self.writeSitemap = function() {
-      if (!self.apos.argv['per-locale']) {
+    self.writeSitemap = function(callback) {
+      if (!self.perLocale) {
         // Simple single-file sitemap
-        self.file = self.apos.argv.file || '/dev/stdout';
+        self.file = self.caching ? 'sitemap.xml' : (self.apos.argv.file || '/dev/stdout');
         var map = _.values(self.maps).join('\n');
         self.writeMap(self.file, map);
       } else {
         // They should be broken down by host,
         // in which case we automatically place them
         // in public/sitemaps in a certain naming pattern
-        var sitemaps = self.apos.rootDir + '/public/sitemaps';
+        self.ensureDir('sitemaps');
+        _.each(self.maps, function(map, key) {
+          var extension = (self.format === 'xml') ? 'xml' : 'txt';
+          self.writeMap('sitemaps/' + key + '.' + extension, map);
+        });
+        self.writeIndex();
+      }
+      if (self.caching) {
+        return self.writeToCache(callback);
+      }
+      return callback(null);
+    };
+    
+    self.ensureDir = function(dir) {
+      if (!self.caching) {
+        dir = self.apos.rootDir + '/public/' + dir;
         try {
-          fs.mkdirSync(sitemaps);
+          fs.mkdirSync(dir);
         } catch (e) {
           // exists
         }
-        _.each(self.maps, function(map, key) {
-          var extension = (self.format === 'xml') ? 'xml' : 'txt';
-          self.writeMap(sitemaps + '/' + key + '.' + extension, map);
-        });
-        self.writeIndex();
       }
     };
     
     self.writeIndex = function() {
       var now = new Date();
-      var sitemaps = self.apos.rootDir + '/public/sitemaps';
-
-      fs.writeFileSync(sitemaps + '/index.xml',
+      
+      self.writeFile('sitemaps/index.xml',
         '<?xml version="1.0" encoding="UTF-8"?>\n' +
         '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
         _.map(_.keys(self.maps), function(key) {
@@ -175,6 +252,7 @@ module.exports = {
         }).join('') +
         '</sitemapindex>\n'
       );
+    
     };
     
     self.writeMap = function(file, map) {
@@ -195,11 +273,37 @@ module.exports = {
     };
     
     self.writeFile = function(filename, s) {
-      if (filename === '/dev/stdout') {
-        // Strange bug on MacOS when using writeFileSync with /dev/stdout
-        fs.writeSync(1, s);
+      if (!self.caching) {
+        filename = require('path').resolve(self.apos.rootDir + '/public', filename);
+        if (filename === '/dev/stdout') {
+          // Strange bug on MacOS when using writeFileSync with /dev/stdout
+          fs.writeSync(1, s);
+        } else {
+          fs.writeFileSync(filename, s);
+        }
       } else {
-        fs.writeFileSync(filename, s);
+        self.cacheOutput.push({
+          filename: filename,
+          data: s,
+          createdAt: new Date()
+        });
+      }
+    };
+    
+    self.writeToCache = function(callback) {
+      return async.series([
+        clear,
+        insert
+      ], callback);
+
+      function clear(callback) {
+        return self.cache.clear(callback);
+      }
+      
+      function insert(callback) {
+        return async.eachSeries(self.cacheOutput, function(doc, callback) {
+          return self.cache.set(doc.filename, doc, self.cacheLifetime, callback);
+        }, callback);
       }
     };
     
@@ -263,6 +367,71 @@ module.exports = {
     self.write = function(locale, s) {
       self.maps[locale] = self.maps[locale] || '';
       self.maps[locale] += s;
+    };
+        
+    self.addRoutes = function() {
+      // Deliver from our tiny little fake cache filesystem
+      self.apos.app.get('/sitemap.xml', function(req, res) {
+        return self.sendCache(res, 'sitemap.xml');
+      });
+      self.apos.app.get('/sitemaps/*', function(req, res) {
+        return self.sendCache(res, 'sitemaps/' + req.params[0]);
+      });
+    };
+    
+    self.sendCache = function(res, path) {
+      return self.cache.get(path, function(err, file) {
+        if (err) {
+          return fail(err);
+        }
+        if (!file) {
+          // If anything else exists in our little filesystem, this
+          // should be a 404 (think of a URL like /sitemap/madeupstuff).
+          // Otherwise it just means the
+          // cache has expired or has never been populated.
+          //
+          // Check for the sitemap index or, if we're not
+          // running in that mode, check for sitemap.xml
+          //
+          // Without this check every 404 would cause a lot of work to be done.
+          return self.cache.get(self.perLocale ? 'sitemaps/index.xml' : 'sitemap.xml', function(err, exists) {
+            if (err) {
+              return fail(err);
+            }
+            if (exists) {
+              return notFound();
+            }
+            return self.cacheAndRetry(res, path);
+          });
+        }
+        return res.contentType('text/xml').send(file.data);
+      });
+      
+      function notFound() {
+        return res.status(404).send('not found');
+      }
+      
+      function fail(err) {
+        console.error(err);
+        return res.status(500).send('error');
+      }
+    };
+    
+    self.cacheAndRetry = function(res, path) {
+      return self.map(function(err) {
+        if (err) {
+          return fail(err);
+        }
+        return self.sendCache(res, path);
+      });
+      function fail(err) {
+        console.error(err);
+        return res.status(500).send('error');
+      }
+    };
+    
+    self.enableCache = function() {
+      self.cache = self.apos.caches.get('apostrophe-sitemap');
     };
   }
 };

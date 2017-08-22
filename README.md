@@ -6,23 +6,17 @@ It serves two purposes: [white-hat SEO](https://support.google.com/webmasters/an
 
 ## SEO with sitemaps
 
-A **frequently-updated and accurate** XML sitemap allows search engines to index your content more quickly and spot new pages immediately. But an out-of-date sitemap is worse than nothing and will damage your site's SEO.
+A frequently updated and accurate XML sitemap allows search engines to index your content more quickly and spot new pages immediately. But *an out-of-date sitemap is worse than nothing and will damage your site's SEO.*
 
-This module attempts to generate a sitemap that includes all of the pages on your site that are visible to the public, including "snippets" such as events, blog posts and people.
-
-## Content strategy
-
-If you're simply looking for a quick visualization of your site's structure for content strategy purposes, this module can help you with that too, via the `--format=text --indent` options.
+This module generates a sitemap that includes all of the pages on your site that are visible to the public, including "pieces" such as events, and blog posts. And it does so dynamically, with a short cache lifetime, so your sitemap is not out of date.
 
 ## How to use it
 
-To generate a content strategy map of your site:
-
-1. Install the module.
+* Install the module.
 
 `npm install --save apostrophe-site-map`
 
-2. Configure it in `app.js`, as one of your modules.
+* Configure it in `app.js`, as one of your modules.
 
 ```javascript
 {
@@ -34,7 +28,7 @@ To generate a content strategy map of your site:
         // array of doc types you do NOT want
         // to include, even though they are
         // accessible on the site. You can also
-        // do this at the command line
+        // do this at the command line.
         excludeTypes: []
       }
     }
@@ -42,23 +36,52 @@ To generate a content strategy map of your site:
 }
 ```
 
-3. Run the task:
+* Just launch your site as you normally would. In development that might just be:
+
+```
+node app
+```
+
+* Access `http://localhost:3000/sitemap.xml` (in production, of course, the hostname is different).
+
+> **AN IMPORTANT WARNING: if you ALREADY have a STATIC public/sitemap.xml file, THAT FILE WILL BE SENT INSTEAD.** Remove it. Also, SITEMAPS ARE CACHED for one hour by default, so you won't see changes instantly. Read on for how to change the cache lifetime, and what you can realistically expect from Google.
+
+### Clearing the cache, and changing the cache lifetime
+
+To better support multiple-server environments, this module now serves sitemaps directly and caches them in your database. That way we don't have to worry about whether a static file exists in a given environment, running the same task on multiple servers, etc.
+
+By default sitemaps are cached for 1 hour. You can change this by specifying the `cacheLifetime` option to this module, in seconds. However, don't get too excited: Google [usually does not check a sitemap more often than a few times a month](https://webmasters.stackexchange.com/questions/43874/how-often-does-gwt-check-dynamic-sitemaps).
+
+You can clear the cache at any time with this command line task:
+
+```
+node app apostrophe-site-map:clear
+```
+
+This will force a new sitemap to be generated on the next request.
+
+### Generating sitemaps as static files
+
+If you wish, you can generate a sitemap as a static file.
+
+Just run this task:
 
 ```
 node app apostrophe-site-map:map
 ```
 
-This generates an XML sitemap and displays it on the console. You can publish it by specifying a location in your project's `public` folder:
+This generates an XML sitemap and displays it on the console. You might decide to publish it by specifying a location in your project's `public` folder, although **letting the module just serve its maps dynamically is better:**
 
 ```
+# NOT RECOMMENDED
 node app apostrophe-site-map:map --file=public/sitemap.xml
 ```
 
-**Hint:** set up a cron job to do this nightly.
+You could automate this with a cron job... but **we recommend that you avoid a static `public/sitemap.xml` file, and just let the module serve `/sitemap.xml` dynamically** as described earlier. **There is nothing worse for your SEO than an out of date sitemap.**
 
-4. Tell Google about it!
+## How to tell Google about your sitemap
 
-Create a `public/robots.txt` file if you do not already have one and add a sitemap line. Here is a valid example for a site that doesn't have any robot restrictions:
+Create a `public/robots.txt` file if you do not already have one and add a Sitemap line. Here is a valid example for a site that doesn't have any other `robots.txt` rules:
 
 ```
 Sitemap: http://EXAMPLE.com/sitemap.xml
@@ -68,48 +91,22 @@ You can also have other `robots.txt` directives if you wish.
 
 On Google's next crawl of your site it should pick up on the presence of the sitemap.
 
-**Don't do this once and forget about it. Set up a scheduled task, such as a cron job.**
+## Changing the priority of pages and pieces
 
-## Warning: watch out for your custom stuff!
+By default, an XML sitemap will assign a priority to a page based on its depth. The home page has a priority of 1.0 (the highest), a subpage of the home page 0.9, and so on.
 
-This module does the best it can.
+Pieces receive a priority of 0.7; however if they have a `startDate` property (i.e. they are events) in the future, they bump up to 0.8, and if they have a `startDate` in the past they bump down to 0.6.
 
-It'll list your published pages, and your published snippets. And it'll rank future events higher than past events.
+**You can also set the priority yourself.** Once you install this module you will discover that there is a new "sitemap priority" field in "page settings," and when editing a piece via the edit dialog box. You can set this field to any number between 0.0 and 1.0, with 1.0 being the highest.
 
-But it doesn't know anything about the custom URLs, independent of the page tree, that you're generating in your own creative and amazing modules.
-
-If that's a concern for you, create `lib/modules/apostrophe-site-map/index.js` in your project, subclass the module, and override the `custom` method to output information about additional URLs. *Note: if you have multiple locales via `apostrophe-workflow` this method is called more than once.* This method now receives `req, locale, callback` if written to accept three arguments.
-
-It's straightforward: all you have to do is pass Apostrophe page objects, or anything else with a `url` property and a `level` property, to `self.output`.
-
-Here's a simple example. Note the use of `self.host` to get the "stem" of the URL (`http://mysite.com`).
-
-For regular pages in the page tree, `level` starts at `0` (the home page) and increments from there for nested pages. For your own "pages," just keep that in mind. The higher the `level`, the lower the `priority` will be in the XML sitemap.
-
-```javascript
-// lib/modules/apostrophe-site-map/index.js, at project level, not in node_modules
-module.exports = {
-  construct: function(self, options) {
-    self.custom = function(req, locale, callback) {
-      // Discover something via the database, then...
-      self.output({
-        _url: 'http://mysite.com/myspecialplace',
-        priority: 0.5
-      });
-      return callback(null);
-    };
-  }
-};
-```
-
-Also consider using `self.req` as your `req` object. This object does *not* have admin privileges. You don't want admin-only URLs in a sitemap.
+As of this writing, Google suggests that they may use the priority to rank the importance of pages *relatively within your site.* **Please do not set all the priorities to 1.0. It will only hurt your chances of communicating which pages are most important to Google.**
 
 ## Content strategy
 
 You can also use this module just to generate a map of your site for your own study:
 
 ```
-node app apostrophe:sitemap --format=text --indent
+node app apostrophe-site-map:map --format=text --indent
 ```
 
 The result is a very informative depth-first list of pages. Note the use of leading spaces to indicate depth:
@@ -125,50 +122,96 @@ The result is a very informative depth-first list of pages. Note the use of lead
 
 You'll want to pipe that to a text file and consider printing it.
 
-*The displayed "depth" of snippets won't correspond directly to the pages they are accessible on. Snippets are output first.* You might want to exclude them when generating content strategy maps.
+*The displayed "depth" of pieces won't always correspond directly to the pieces-pages that display them.* You might want to exclude them when generating content strategy maps.
+
+## Warning: watch out for your custom stuff!
+
+This module does the best it can.
+
+It'll list your published pages, and your published pieces. And it'll rank future events higher than past events.
+
+But it doesn't know anything about the custom URLs, independent of Apostrophe's usual mechanisms, that you're generating in your own creative and amazing modules.
+
+If that's a concern for you, create `lib/modules/apostrophe-site-map/index.js` in your project, subclass the module, and override the `custom` method to output information about **additional** URLs. *Note: if you have multiple locales via `apostrophe-workflow` this method is called once per locale.* This method now receives `req, locale, callback` if written to accept three arguments.
+
+It's straightforward: all you have to do is pass Apostrophe page objects, or anything else with an `_url` property and a `siteMapPriority` property, to `self.output`.
+
+Here's a simple example. Note the use of `self.host` to get the "stem" of the URL (`http://mysite.com`).
+
+For regular pages in the page tree, `level` starts at `0` (the home page) and increments from there for nested pages. For your own "pages," just keep that in mind. The higher the `level`, the lower the `priority` will be in the XML sitemap. Or pass the`siteMapPriority` property explicitly.
+
+> This feature is **not** for changing priorities of existing pages and pieces. It is for your custom routes and dispatch URLs that the module cannot discover on its own. See the "page settings" dialog box or the edit dialog box for a field that lets you set the priority of an ordinary page or piece.
+
+```javascript
+// lib/modules/apostrophe-site-map/index.js, at project level, not in node_modules
+module.exports = {
+  construct: function(self, options) {
+    self.custom = function(req, locale, callback) {
+      // Discover something via the database, then...
+      self.output({
+        _url: 'http://mysite.com/myspecialplace',
+        // Defaults to 0.5 if not set and a `level` property
+        // cannot be used to infer it
+        siteMapPriority: 0.9
+      });
+      return callback(null);
+    };
+  }
+};
+```
+
+Note that `req` only has the same privileges as an anonymous site visitor. If you call `find` methods with it, you will only see what typical site visitors see. This is good, because **you don't want Google to index restricted pages.**
 
 ## How to exclude stuff
 
-"I don't want thousands of blog posts in there from `apostrophe-blog-2`." OK, so do this:
-
-node app apostrophe:site-map --exclude-types=blogPost
+"I don't want thousands of blog posts in my sitemaps." OK, so do this in `app.js` when configuring the module:
 
 Or do it in `app.js` when configuring the module:
 
 ```javascript
   {
-    apostrophe-site-map: {
-      excludeTypes: [ 'blogPost' ]
+    'apostrophe-site-map': {
+      excludeTypes: [ 'apostrophe-blog-post' ]
     }
   }
 ```
 
-You may specify multiple page types to exclude, separated by commas.
+You may specify multiple doc types to exclude.
+
+You can also do this at the command line, which is helpful when generating a map just for content strategy purposes:
+
+```
+node app apostrophe-site-map:map --format=text --indent --exclude-types=apostrophe-blog
+```
+
+Alternatively, you can set the `sitemap` option to `false` when configuring any module that extends `apostrophe-custom-pages` or `apostrophe-pieces`.
+
+You can also explicitly set it to `true` if you wish to have sitemaps for a piece type that is normally excluded, like `apostrophe-users`. Of course this will only help if they have a `_url` property when fetched, usually via a corresponding module that extends `apostrophe-pieces-pages`.
 
 ## Integration with the `apostrophe-workflow` module
 
 If you are using the `apostrophe-workflow` module, the sitemap module will automatically fetch content for the live versions of all configured locales.
 
-By default, it will be emitted as a single sitemap. [According to Google, this is OK, although you must claim all of the sites under a single identity in the webmaster console.](https://support.google.com/webmasters/answer/75712?hl=en) However, if you would prefer a separate sitemap file for each hostname found in the absolute URLs, you can pass the `--per-locale` option. If you do so, a `public/sitemaps` folder is created and populated with sitemaps for each workflow locale, and a `public/sitemaps/index.xml` file is also created, containing a [sitemap index file](https://support.google.com/webmasters/answer/75712?hl=en). You should submit the index file to Google, not all of the individual sitemaps. Again, you must claim all of the sites under a single identity.
+By default, the result will be emitted as a single sitemap. [According to Google, this is OK, although you must claim all of the sites under a single identity in the Google webmaster console.](https://support.google.com/webmasters/answer/75712?hl=en) However, if you would prefer a separate sitemap file for each hostname found in the absolute URLs, you can set the `perLocale` option to `true` when configuring the module.
 
-If `--per-locale` is used, the `--file` option is ignored.
+Or, if you're generating static sitemaps at the command line, you can pass the `--per-locale` option.
 
-## If you get an error
+When you set the `perLocale` option, sitemaps are served by the module from `/sitemaps/fr.xml`, `/sitemaps/en.xml`, etc., and a sitemap index is served from `/sitemaps/index.xml`. **Make sure you list `/sitemaps/index.xml` for your Sitemap directive in `robots.txt`**.
 
-"I got a MongoDB error about exceeding 32MB."
+> If you generate static files instead with the `apostrophe-site-map:map` task, a physical `public/sitemap` folder is created. **IF YOU CHANGE YOUR MIND AND WISH TO LET THE MODULE SERVE SITEMAPS FOR YOU, REMOVE THIS FOLDER.** Otherwise the static files will always "win."
 
-There's a hard limit on the number of documents MongoDB will sort for you (TODO: figure out why adding an index solves this in the mongo shell but not in this task). Exclude more types.
+If the `perLocale` option is set to `true` for the module or the `--per-locale` command line parameter is passed, the `--file` command line parameter is ignored unless `--format=text` is also present. This allows you to still use the module for content strategy.
 
-## Compatibility
+## Changelog
 
-Supports Apostrophe 2.x. There are also tagged versions for older releases of Apostrophe.
+2.1.0: sitemaps are now served dynamically. They are stored in Apostrophe's cache for a configurable period of time. There is no need to run a command line task, or mess around with static files. Please note that you must remove existing static sitemap files first. See the documentation for important recommendations. Thanks to Michelin for their support of this work.
 
-## License
+The documentation has also been overhauled thoroughly to be completely accurate for Apostrophe 2.x.
 
-Copyright (c) 2015, 2016, 2017 P'unk Avenue LLC
+2.0.4: workflow-aware; new features providing compatibility with the apostrophe-workflow module.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+2.0.3: documentation updates.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+2.0.1-2.0.2: minor bug fixes.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+2.0.0: initial port to Apostrophe 2.x.
