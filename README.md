@@ -202,6 +202,20 @@ When you set the `perLocale` option, sitemaps are served by the module from `/si
 
 If the `perLocale` option is set to `true` for the module or the `--per-locale` command line parameter is passed, the `--file` command line parameter is ignored unless `--format=text` is also present. This allows you to still use the module for content strategy.
 
+## Performances
+
+If you have a lot of documents (especially pieces), the sitemap building maybe quite slow. You can raise the bulk number of pieces requested from 100 (default) to something else, but beware, if your documents are too large, it may cause failure.
+
+```javascript
+modules: {
+  {
+    'apostrophe-site-map': {
+      piecesLimit: 500
+    }
+  }
+}
+```
+
 ## Changelog
 
 2.1.1: short-lived bug affecting command line tasks.
@@ -217,3 +231,5 @@ The documentation has also been overhauled thoroughly to be completely accurate 
 2.0.1-2.0.2: minor bug fixes.
 
 2.0.0: initial port to Apostrophe 2.x.
+
+2.2.0: enhance performances with many pieces
