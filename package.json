@@ -6,7 +6,8 @@
   "dependencies": {
     "async": "^2.5.0",
     "lodash": "^3.10.1",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "nyc": "^11.2.1"
   },
   "devDependencies": {
     "chai": "^4.1.2",
@@ -18,8 +19,9 @@
     "supertest": "^3.0.0"
   },
   "scripts": {
-    "test": "mocha test/**/*.js",
-    "test:watch": "mocha -w test/**/*.js"
+    "test": "nyc --reporter=lcov mocha",
+    "test:watch": "nyc --reporter=lcov mocha -w",
+    "test:report": "nyc mocha --reporter=dot && nyc check-coverage"
   },
   "repository": {
     "type": "git",
@@ -34,5 +36,8 @@
   "bugs": {
     "url": "https://github.com/punkave/apostrophe-site-map/issues"
   },
-  "homepage": "https://github.com/punkave/apostrophe-site-map"
+  "homepage": "https://github.com/punkave/apostrophe-site-map",
+  "nyc": {
+    "report-dir": "./.coverage"
+  }
 }
