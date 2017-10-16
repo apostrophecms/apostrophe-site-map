@@ -10,7 +10,47 @@ chai.should();
 
 describe('apostrophe-site-map', function () {
 
-    var FAKE_DATE = new Date('2010/11/23')
+    var FAKE_DATE = new Date('2010/11/23');
+
+    function homePage() {
+        return {
+            _url: '/my/homepage/url',
+            workflowLocale: 'fr-fr',
+            level: 0,
+            _children: [{
+                _url: '/another/page/url',
+                workflowLocale: 'fr-fr',
+                level: 1,
+                _children: [{
+                    _url: '/again/another/page/url',
+                    workflowLocale: 'fr-fr',
+                    level: 2
+                }]
+            }]
+        };
+    };
+
+    function pieces() {
+        return [{
+            _url: '/my/piece/url',
+            workflowLocale: 'fr-fr',
+            level: 0,
+            _children: [{
+                _url: '/my/piece/child/url',
+                workflowLocale: 'fr-fr',
+                level: 1
+            }]
+        }, {
+            _url: '/another/piece/url',
+            workflowLocale: 'fr-fr',
+            level: 0,
+            _children: [{
+                _url: '/another/piece/child/url',
+                workflowLocale: 'fr-fr',
+                level: 1
+            }]
+        }];
+    };
 
     beforeEach(function () {
         this.clock = sinon.useFakeTimers(FAKE_DATE);
@@ -32,16 +72,16 @@ describe('apostrophe-site-map', function () {
         }
     }
 
-    function buildApos(homePage, pieces) {
+    function buildApos() {
         var pages = {
             find: function () { return this; },
             children: function () { return this; },
             toObject: function (resolver) {
-                resolver(null, homePage);
+                resolver(null, homePage());
             }
         };
 
-        var targetPieces = pieces;
+        var targetPieces = pieces();
         var fakeModule = {
             '__meta': { chain: [{ name: 'apostrophe-pieces' }] },
             find: function () { return this; },
@@ -60,17 +100,10 @@ describe('apostrophe-site-map', function () {
                 resolver(null, targetPieces);
             }
         };
+
         return {
             argv: {},
-            locks: {
-                lock: callbackResolver, unlock: callbackResolver
-            },
-            tasks: {
-                getAnonReq: function () { return {}; },
-                add: function () { }
-            },
-            pages: pages,
-            modules: { fakeModule: fakeModule },
+            baseUrl: 'baseUrl',
             caches: {
                 get: function () {
                     var cache = new Cache();
@@ -80,70 +113,112 @@ describe('apostrophe-site-map', function () {
                         clear: callbackResolver
                     }
                 }
+            },
+            locks: {
+                lock: callbackResolver,
+                unlock: callbackResolver
+            },
+            modules: { fakeModule: fakeModule },
+            pages: pages,
+            prefix: '',
+            tasks: {
+                getAnonReq: function () { return {}; },
+                add: function () { }
             }
         }
     }
 
-    describe('#buildLocale', function () {
-        it('should return built sitemap for a locale', function () {
-            // given
-            var self = {
-                '__meta': { name: 'apostrophe-site-map' },
-                apos: buildApos({
-                    _url: '/my/homepage/url',
-                    level: 0,
-                    _children: [{
-                        _url: '/another/page/url',
-                        level: 1,
-                        _children: [{
-                            _url: '/again/another/page/url',
-                            level: 2
-                        }]
-                    }]
-                }, [{
-                    _url: '/my/piece/url',
-                    level: 0,
-                    _children: [{
-                        _url: '/my/piece/child/url',
-                        level: 1
-                    }]
-                }, {
-                    _url: '/another/piece/url',
-                    level: 0,
-                    _children: [{
-                        _url: '/another/piece/child/url',
-                        level: 1
-                    }]
-                }])
-            };
+    it('should return xml sitemap when calling route', function () {
+        // given
+        var self = {
+            '__meta': { name: 'apostrophe-site-map' },
+            apos: buildApos()
+        };
 
-            self.apos.app = express();
+        self.apos.app = express();
 
-            this.sitemap.construct(self, {});
-            this.sitemap.afterConstruct(self);
+        this.sitemap.construct(self, {});
+        this.sitemap.afterConstruct(self);
 
-            // when
-            return request(self.apos.app)
-                .get('/sitemap.xml')
-                // then
-                .expect('Content-Type', /text\/xml/)
-                .expect(200)
-                .expect(function (res) {
-                    res.text.should.deep.equal(
-                        '<?xml version="1.0" encoding="UTF-8"?>\n' +
-                        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-                        '  <url><priority>1</priority><changefreq>daily</changefreq><loc>/my/homepage/url</loc></url>\n' +
-                        '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/page/url</loc></url>\n' +
-                        '  <url><priority>0.8</priority><changefreq>daily</changefreq><loc>/again/another/page/url</loc></url>\n' +
-                        '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
-                        '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/my/piece/child/url</loc></url>\n' +
-                        '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/another/piece/url</loc></url>\n' +
-                        '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/piece/child/url</loc></url>\n' +
-                        '</urlset>\n'
-                    )
-                });
+        // when
+        return request(self.apos.app)
+            .get('/sitemap.xml')
+            // then
+            .expect('Content-Type', /text\/xml/)
+            .expect(200)
+            .expect(function (res) {
+                res.text.should.deep.equal(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+                    '  <url><priority>1</priority><changefreq>daily</changefreq><loc>/my/homepage/url</loc></url>\n' +
+                    '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/page/url</loc></url>\n' +
+                    '  <url><priority>0.8</priority><changefreq>daily</changefreq><loc>/again/another/page/url</loc></url>\n' +
+                    '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
+                    '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/my/piece/child/url</loc></url>\n' +
+                    '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/another/piece/url</loc></url>\n' +
+                    '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/piece/child/url</loc></url>\n' +
+                    '</urlset>\n'
+                )
+            });
+    });
+
+    it('should return xml sitemap per locale when calling route', function () {
+        // given
+        var self = {
+            '__meta': { name: 'apostrophe-site-map' },
+            apos: buildApos()
+        };
+
+        self.apos.app = express();
+        self.apos.modules['apostrophe-workflow'] = {
+            '__meta': { name: 'apostrophe-workflow' },
+            locales: { 'fr-fr': {} }
+        };
+
+        this.sitemap.construct(self, {
+            baseUrl: 'baseUrl',
+            perLocale: true
         });
+        this.sitemap.afterConstruct(self);
+        var agent = request(self.apos.app);
 
-
+        // when
+        return agent
+            .get('/sitemaps/index.xml')
+            // then
+            .expect('Content-Type', /text\/xml/)
+            .expect(200)
+            .expect(function (res) {
+                res.text.should.deep.equal(
+                    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+                    '  <sitemap>\n' +
+                    '    <loc>baseUrl/sitemaps/fr-fr.xml</loc>\n' +
+                    '    <lastmod>2010-11-22T23:00:00.000Z</lastmod>\n' +
+                    '  </sitemap>\n' +
+                    '</sitemapindex>\n'
+                );
+            })
+            .then(function () {
+                return agent
+                    .get('/sitemaps/fr-fr.xml')
+                    // then
+                    .expect('Content-Type', /text\/xml/)
+                    .expect(200)
+                    .expect(function (res) {
+                        res.text.should.deep.equal(
+                            '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+                            '  <url><priority>1</priority><changefreq>daily</changefreq><loc>/my/homepage/url</loc></url>\n' +
+                            '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/page/url</loc></url>\n' +
+                            '  <url><priority>0.8</priority><changefreq>daily</changefreq><loc>/again/another/page/url</loc></url>\n' +
+                            '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
+                            '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/my/piece/child/url</loc></url>\n' +
+                            '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/another/piece/url</loc></url>\n' +
+                            '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/piece/child/url</loc></url>\n' +
+                            '</urlset>\n'
+                        );
+                    })
+            });
     });
 });
