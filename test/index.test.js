@@ -5,12 +5,16 @@ var express = require('express');
 var proxyquire = require('proxyquire');
 var request = require('supertest');
 var sinon = require('sinon');
+var sinonChai = require("sinon-chai");
 
 chai.should();
+chai.use(sinonChai);
 
 describe('apostrophe-site-map', function () {
 
     var FAKE_DATE = new Date('2010/11/23');
+    var FAKE_YESTERDAY = new Date('2010/11/22');
+    var FAKE_TOMORROW = new Date('2010/11/22');
 
     function homePage() {
         return {
@@ -34,7 +38,7 @@ describe('apostrophe-site-map', function () {
         return [{
             _url: '/my/piece/url',
             workflowLocale: 'fr-fr',
-            level: 0,
+            startDate: FAKE_YESTERDAY,
             _children: [{
                 _url: '/my/piece/child/url',
                 workflowLocale: 'fr-fr',
@@ -43,7 +47,6 @@ describe('apostrophe-site-map', function () {
         }, {
             _url: '/another/piece/url',
             workflowLocale: 'fr-fr',
-            level: 0,
             _children: [{
                 _url: '/another/piece/child/url',
                 workflowLocale: 'fr-fr',
@@ -53,8 +56,12 @@ describe('apostrophe-site-map', function () {
     };
 
     beforeEach(function () {
+        this.mockFs = {
+            writeSync: sinon.spy()
+        }
         this.clock = sinon.useFakeTimers(FAKE_DATE);
         this.sitemap = proxyquire('../index', {
+            fs: this.mockFs
         });
     });
 
@@ -153,7 +160,7 @@ describe('apostrophe-site-map', function () {
                     '  <url><priority>1</priority><changefreq>daily</changefreq><loc>/my/homepage/url</loc></url>\n' +
                     '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/page/url</loc></url>\n' +
                     '  <url><priority>0.8</priority><changefreq>daily</changefreq><loc>/again/another/page/url</loc></url>\n' +
-                    '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
+                    '  <url><priority>0.6</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
                     '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/my/piece/child/url</loc></url>\n' +
                     '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/another/piece/url</loc></url>\n' +
                     '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/piece/child/url</loc></url>\n' +
@@ -212,7 +219,7 @@ describe('apostrophe-site-map', function () {
                             '  <url><priority>1</priority><changefreq>daily</changefreq><loc>/my/homepage/url</loc></url>\n' +
                             '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/page/url</loc></url>\n' +
                             '  <url><priority>0.8</priority><changefreq>daily</changefreq><loc>/again/another/page/url</loc></url>\n' +
-                            '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
+                            '  <url><priority>0.6</priority><changefreq>daily</changefreq><loc>/my/piece/url</loc></url>\n' +
                             '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/my/piece/child/url</loc></url>\n' +
                             '  <url><priority>0.7</priority><changefreq>daily</changefreq><loc>/another/piece/url</loc></url>\n' +
                             '  <url><priority>0.9</priority><changefreq>daily</changefreq><loc>/another/piece/child/url</loc></url>\n' +
@@ -220,5 +227,41 @@ describe('apostrophe-site-map', function () {
                         );
                     })
             });
+    });
+
+    it('should return text sitemap when calling map task', function (done) {
+        // given
+        var mockWriteFileSync = this.mockFs.writeSync;
+        var self = {
+            '__meta': { name: 'apostrophe-site-map' },
+            apos: buildApos()
+        };
+
+        self.apos.app = express();
+        self.apos.options = {
+            baseUrl: 'someBaseUrl'
+        };
+        self.apos.argv = {
+            indent: true // TODO no output if indent is not defined here
+        }
+        this.sitemap.construct(self, {format: 'text'});
+        this.sitemap.afterConstruct(self);
+        var agent = request(self.apos.app);
+
+        // when
+        self.mapTask(self.apos, {}, function () {
+            // then
+
+            mockWriteFileSync.getCall(0).args[1].should.equal( 
+            '/my/homepage/url\n' +
+            '  /another/page/url\n' +
+            '    /again/another/page/url\n' +
+            '        /my/piece/url\n' +
+            '  /my/piece/child/url\n' +
+            '      /another/piece/url\n' +
+            '  /another/piece/child/url\n'
+          );
+            done();
+        });
     });
 });
