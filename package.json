@@ -16,6 +16,7 @@
     "node-cache": "^4.1.1",
     "proxyquire": "^1.8.0",
     "sinon": "^4.0.1",
+    "sinon-chai": "^2.14.0",
     "supertest": "^3.0.0"
   },
   "scripts": {
@@ -38,6 +39,16 @@
   },
   "homepage": "https://github.com/punkave/apostrophe-site-map",
   "nyc": {
-    "report-dir": "./.coverage"
+    "report-dir": "./.coverage",
+    "lines": 70,
+    "statements": 70,
+    "functions":70,
+    "branches": 70,
+    "watermarks": {
+      "lines": [70, 95],
+      "functions": [70, 95],
+      "branches": [70, 95],
+      "statements": [70, 95]
+    }
   }
 }
