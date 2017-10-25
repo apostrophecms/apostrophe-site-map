@@ -4,6 +4,8 @@ var _ = require('lodash');
 var fs = require('fs');
 var url = require('url');
 
+var DEFAULT_LOCALE = 'default';
+
 module.exports = {
 
   // Cache sitemaps for 1 hour by default. Depending on pagerank
@@ -11,6 +13,8 @@ module.exports = {
   // monthly, so don't get your hopes up too far about changing this
   
   cacheLifetime: 60 * 60,
+
+  piecesLimit: 100,
 
   moogBundle: {
     modules: [ 'apostrophe-site-map-custom-pages', 'apostrophe-site-map-pieces' ],
@@ -29,6 +33,8 @@ module.exports = {
     self.caching = true;
     
     self.cacheLifetime = options.cacheLifetime;
+
+    self.piecesLimit = options.piecesLimit;
     
     self.clearTask = function(apos, argv, callback) {
       // Just forget the current sitemaps to make room
@@ -94,14 +100,10 @@ module.exports = {
       }
       
       function map(callback) {
-        var criteria = {};
-
         self.maps = {};
         self.today = moment().format('YYYY-MM-DD');
 
-        criteria.type = { $nin: self.excludeTypes };
-        
-        var locales = [ 'default' ];
+        var locales = [ DEFAULT_LOCALE ];
         
         if (self.workflow) {
           locales = _.filter(_.keys(self.workflow.locales), function(locale) {
@@ -163,14 +165,14 @@ module.exports = {
         if (_.contains(self.excludeTypes, module.name)) {
           return setImmediate(callback);
         }
-        // Paginate through 100 at a time to
+        // Paginate through 100 (by default) at a time to
         // avoid slamming memory
         var done = false;
         var skip = 0;
         return async.whilst(
           function() { return !done; },
           function(callback) {
-          return self.findPieces(req, module).skip(skip).limit(100).toArray(function(err, pieces) {
+          return self.findPieces(req, module).skip(skip).limit(self.piecesLimit).toArray(function(err, pieces) {
             _.each(pieces, function(piece) {
               if (!piece._url) {
                 // This one has no page to be viewed on
@@ -330,7 +332,7 @@ module.exports = {
     // or is marked private, the output is discarded.
 
     self.output = function(page) {
-      var locale = page.workflowLocale || 'default';
+      var locale = page.workflowLocale || DEFAULT_LOCALE;
       if (self.workflow) {
         if (!self.workflow.locales[locale]) {
           return;
