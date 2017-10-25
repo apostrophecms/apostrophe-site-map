@@ -4,7 +4,7 @@ var _ = require('lodash');
 var fs = require('fs');
 var url = require('url');
 
-var DEFAULT_LOCALE = 'default';
+var defaultLocale = 'default';
 
 module.exports = {
 
@@ -14,7 +14,7 @@ module.exports = {
   
   cacheLifetime: 60 * 60,
 
-  piecesLimit: 100,
+  piecesPerBatch: 100,
 
   moogBundle: {
     modules: [ 'apostrophe-site-map-custom-pages', 'apostrophe-site-map-pieces' ],
@@ -34,7 +34,7 @@ module.exports = {
     
     self.cacheLifetime = options.cacheLifetime;
 
-    self.piecesLimit = options.piecesLimit;
+    self.piecesPerBatch = options.piecesPerBatch;
     
     self.clearTask = function(apos, argv, callback) {
       // Just forget the current sitemaps to make room
@@ -103,7 +103,7 @@ module.exports = {
         self.maps = {};
         self.today = moment().format('YYYY-MM-DD');
 
-        var locales = [ DEFAULT_LOCALE ];
+        var locales = [ defaultLocale ];
         
         if (self.workflow) {
           locales = _.filter(_.keys(self.workflow.locales), function(locale) {
@@ -172,7 +172,7 @@ module.exports = {
         return async.whilst(
           function() { return !done; },
           function(callback) {
-          return self.findPieces(req, module).skip(skip).limit(self.piecesLimit).toArray(function(err, pieces) {
+          return self.findPieces(req, module).skip(skip).limit(self.piecesPerBatch).toArray(function(err, pieces) {
             _.each(pieces, function(piece) {
               if (!piece._url) {
                 // This one has no page to be viewed on
@@ -332,7 +332,7 @@ module.exports = {
     // or is marked private, the output is discarded.
 
     self.output = function(page) {
-      var locale = page.workflowLocale || DEFAULT_LOCALE;
+      var locale = page.workflowLocale || defaultLocale;
       if (self.workflow) {
         if (!self.workflow.locales[locale]) {
           return;

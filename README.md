@@ -202,21 +202,23 @@ When you set the `perLocale` option, sitemaps are served by the module from `/si
 
 If the `perLocale` option is set to `true` for the module or the `--per-locale` command line parameter is passed, the `--file` command line parameter is ignored unless `--format=text` is also present. This allows you to still use the module for content strategy.
 
-## Performances
+## Performance
 
-If you have a lot of documents (especially pieces), the sitemap building maybe quite slow. You can raise the bulk number of pieces requested from 100 (default) to something else, but beware, if your documents are too large, it may cause failure.
+If you have thousands of pieces, building the sitemap may take a long time. By default, this module processes 100 pieces at a time, to avoid using too much memory. You can adjust this by setting the `piecesPerBatch` option to a larger number. However, be aware that if you have many fields and joins, it is possible to use a great deal of memory this way.
 
 ```javascript
 modules: {
   {
     'apostrophe-site-map': {
-      piecesLimit: 500
+      piecesPerBatch: 500
     }
   }
 }
 ```
 
 ## Changelog
+
+2.2.0: `piecesPerBatch` option for performance. Still defaults to processing 100 pieces at a time.
 
 2.1.1: short-lived bug affecting command line tasks.
 
