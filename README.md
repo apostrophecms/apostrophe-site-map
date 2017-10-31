@@ -218,7 +218,10 @@ modules: {
 
 ## Changelog
 
-2.2.0: `piecesPerBatch` option for performance. Still defaults to processing 100 pieces at a time.
+2.2.0:
+
+* `piecesPerBatch` option for performance. Still defaults to processing 100 pieces at a time.
+* Support for the `hostname` option of `apostrophe-workflow`.
 
 2.1.1: short-lived bug affecting command line tasks.
 
