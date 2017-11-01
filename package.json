@@ -4,13 +4,25 @@
   "description": "Generate site maps for sites powered by the Apostrophe CMS.",
   "main": "index.js",
   "dependencies": {
-    "async": "^1.5.2",
+    "async": "^2.5.0",
     "lodash": "^3.10.1",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "nyc": "^11.2.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "express": "^4.16.2",
+    "mocha": "^4.0.1",
+    "node-cache": "^4.1.1",
+    "proxyquire": "^1.8.0",
+    "sinon": "^4.0.1",
+    "sinon-chai": "^2.14.0",
+    "supertest": "^3.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nyc --reporter=lcov mocha",
+    "test:watch": "nyc --reporter=lcov mocha -w",
+    "test:report": "nyc mocha --reporter=dot && nyc check-coverage"
   },
   "repository": {
     "type": "git",
@@ -25,5 +37,18 @@
   "bugs": {
     "url": "https://github.com/punkave/apostrophe-site-map/issues"
   },
-  "homepage": "https://github.com/punkave/apostrophe-site-map"
+  "homepage": "https://github.com/punkave/apostrophe-site-map",
+  "nyc": {
+    "report-dir": "./.coverage",
+    "lines": 70,
+    "statements": 70,
+    "functions":70,
+    "branches": 70,
+    "watermarks": {
+      "lines": [70, 95],
+      "functions": [70, 95],
+      "branches": [70, 95],
+      "statements": [70, 95]
+    }
+  }
 }
