@@ -239,7 +239,14 @@ module.exports = {
     
     self.writeIndex = function() {
       var now = new Date();
-      
+      if (!self.apos.baseUrl) {
+        throw new Error(
+          'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
+          'to use sitemap indexes. Example: baseUrl: "http://mycompany.com"\n\n' +
+          'Note there is NO TRAILING SLASH.\n\n' +
+          'Usually you will override this in data/local.js, on production.'
+        );
+      }
       self.writeFile('sitemaps/index.xml',
         '<?xml version="1.0" encoding="UTF-8"?>\n' +
         '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
