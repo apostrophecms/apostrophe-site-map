@@ -44,7 +44,11 @@ module.exports = {
     
     self.mapTask = function(apos, argv, callback) {
 
-      self.caching = false;
+      if (argv['update-cache']) {
+        self.caching = true;
+      } else {
+        self.caching = false;
+      }
             
       if (!apos.options.baseUrl) {
         return callback(new Error(

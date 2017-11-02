@@ -60,6 +60,16 @@ node app apostrophe-site-map:clear
 
 This will force a new sitemap to be generated on the next request.
 
+### Generating the sitemap ahead of time
+
+You can use this command line task to update the sitemap in Apostrophe's cache at any time, rather than waiting for it to expire after an hour and generate again on the next request:
+
+```
+node app apostrophe-site-map:map --update-cache
+```
+
+If your site has many pages and pieces, generating the sitemap dynamically may take a long time. Scheduling the above task to run at least twice an hour via a [cron job](https://www.howtogeek.com/101288/how-to-schedule-tasks-on-linux-an-introduction-to-crontab-files/) guarantees that a search engine will never be forced to wait when requesting your sitemap. If you have enough content, search engines may hang up before your sitemap is generated, so this task is very useful.
+
 ### Generating sitemaps as static files
 
 If you wish, you can generate a sitemap as a static file.
@@ -70,14 +80,7 @@ Just run this task:
 node app apostrophe-site-map:map
 ```
 
-This generates an XML sitemap and displays it on the console. You might decide to publish it by specifying a location in your project's `public` folder, although **letting the module just serve its maps dynamically is better:**
-
-```
-# NOT RECOMMENDED
-node app apostrophe-site-map:map --file=public/sitemap.xml
-```
-
-You could automate this with a cron job... but **we recommend that you avoid a static `public/sitemap.xml` file, and just let the module serve `/sitemap.xml` dynamically** as described earlier. **There is nothing worse for your SEO than an out of date sitemap.**
+When `--update-cache` is not given, this task generates an XML sitemap and displays it on the console. This is mostly useful for content strategy purposes. If your goal is to serve the sitemap to search engines, see above for a better way.
 
 ## How to tell Google about your sitemap
 
@@ -217,6 +220,10 @@ modules: {
 ```
 
 ## Changelog
+
+2.2.1:
+
+* The command line `node app apostrophe-site-map:map --update-cache` can be used to update the sitemap that will be sent from Apostrophe's internal cache without waiting for the cache to expire. If the task is scheduled to run more often then once an hour, then a search engine will never be asked to wait a long time to generate it. For sites with many pages and pieces this can be critical.
 
 2.2.0:
 
