@@ -1,16 +1,16 @@
 {
   "name": "apostrophe-site-map",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Generate site maps for sites powered by the Apostrophe CMS.",
   "main": "index.js",
   "dependencies": {
     "async": "^1.5.2",
     "lodash": "^3.10.1",
-    "moment": "^2.18.1"
+    "moment": "^2.19.2"
   },
   "devDependencies": {
-    "apostrophe": "^2.39.0",
-    "apostrophe-workflow": "^2.3.2"
+    "apostrophe": "^2.41.0",
+    "apostrophe-workflow": "^2.4.1"
   },
   "scripts": {
     "test": "mocha test/test.js"

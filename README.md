@@ -221,6 +221,8 @@ modules: {
 
 ## Changelog
 
+2.3.0: sitemaps for sites localized with the `apostrophe-workflow` module now include pointers to alternate language versions of each document.
+
 2.2.1:
 
 * The command line `node app apostrophe-site-map:map --update-cache` can be used to update the sitemap that will be sent from Apostrophe's internal cache without waiting for the cache to expire. If the task is scheduled to run more often then once an hour, then a search engine will never be asked to wait a long time to generate it. For sites with many pages and pieces this can be critical.

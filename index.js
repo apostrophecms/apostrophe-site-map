@@ -43,7 +43,6 @@ module.exports = {
     };
     
     self.mapTask = function(apos, argv, callback) {
-
       if (argv['update-cache']) {
         self.caching = true;
       } else {
@@ -79,6 +78,7 @@ module.exports = {
         lock,
         init,
         map,
+        hreflang,
         write,
         unlock
       ], callback);
@@ -116,7 +116,7 @@ module.exports = {
         }
 
         return async.eachSeries(locales, function(locale, callback) {
-          var req = self.apos.tasks.getAnonReq();
+          var req = self.apos.tasks.getAnonReq({ locale: locale });
           req.locale = locale;
           return async.series([
             _.partial(self.getPages, req, locale),
@@ -135,6 +135,57 @@ module.exports = {
           }
           return callback(null);
         });
+      }
+
+      function hreflang(callback) {
+
+        var alternativesByGuid = {};
+
+        each(function(entry) {
+          if (!alternativesByGuid[entry.url.workflowGuid]) {
+            alternativesByGuid[entry.url.workflowGuid] = [];
+          }
+          alternativesByGuid[entry.url.workflowGuid].push(entry);
+        });
+
+        each(function(entry) {
+          entry.url['xhtml:link'] = [];
+          var alternatives = alternativesByGuid[entry.url.workflowGuid];
+          _.each(alternatives, function(alternative) {
+            if (alternative === entry) {
+              return;
+            }
+            entry.url['xhtml:link'].push({
+              _attributes: {
+                rel: 'alternate',
+                hreflang: alternative.url.workflowLocale,
+                href: alternative.url.loc
+              }
+            });
+          });
+        });
+
+        each(function(entry) {
+          delete entry.url.workflowLocale;
+          delete entry.url.workflowGuid;          
+        });
+
+        return setImmediate(callback);
+
+        function each(iterator) {
+          _.each(self.maps, function(map) {
+            _.each(map, function(entry) {
+              if (typeof(entry) !== 'object') {
+                return;
+              }
+              if (!entry.url.workflowGuid) {
+                return;
+              }
+              iterator(entry);
+            });
+          });
+        }
+
       }
       
       function write(callback) {
@@ -211,7 +262,7 @@ module.exports = {
       if (!self.perLocale) {
         // Simple single-file sitemap
         self.file = self.caching ? 'sitemap.xml' : (self.apos.argv.file || '/dev/stdout');
-        var map = _.values(self.maps).join('\n');
+        var map = _.map(self.maps, self.stringify).join('\n');
         self.writeMap(self.file, map);
       } else {
         // They should be broken down by host,
@@ -220,6 +271,7 @@ module.exports = {
         self.ensureDir('sitemaps');
         _.each(self.maps, function(map, key) {
           var extension = (self.format === 'xml') ? 'xml' : 'txt';
+          map = _.map(map, self.stringify).join('\n');
           self.writeMap('sitemaps/' + key + '.' + extension, map);
         });
         self.writeIndex();
@@ -228,6 +280,56 @@ module.exports = {
         return self.writeToCache(callback);
       }
       return callback(null);
+    };
+
+    // If `value` is not an object, it is returned as-is,
+    // or with < & > escaped if `self.format` is `xml`.
+    //
+    // If it is an object, it is converted to XML elements,
+    // one for each property; they may have sub-elements if
+    // the properties contain objects. The _attributes
+    // property is converted to attributes. Array
+    // properties are converted to a series of elements.
+    //
+    // TODO: this is clearly yak-shaving, but the data format
+    // is nice. See if there's another library that takes the same
+    // or substantially the same format.
+
+    self.stringify = function(value) {
+      if (Array.isArray(value) && (self.format !== 'xml')) {
+        return value.join('');
+      }
+      if (typeof(value) !== 'object') {
+        if (self.format === 'xml') {
+          return self.apos.utils.escapeHtml(value);
+        }
+        return value;
+      }
+      var xml = '';
+      _.each(value, function(v, k) {
+        if (k === '_attributes') {
+          return;
+        }
+        if (Array.isArray(v)) {
+          _.each(v, function(el) {
+            element(k, el);
+          });
+        } else {
+          element(k, v);
+        }
+        function element(k, v) {
+          xml += '<' + k;
+          if (v._attributes) {
+            _.each(v._attributes, function(av, a) {
+              xml += ' ' + a + '="' + self.apos.utils.escapeHtml(av) + '"';
+            });
+          }
+          xml += '>';
+          xml += self.stringify(v);
+          xml += '</' + k + '>\n';
+        }
+      });
+      return xml;
     };
     
     self.ensureDir = function(dir) {
@@ -252,8 +354,10 @@ module.exports = {
         );
       }
       self.writeFile('sitemaps/index.xml',
-        '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+
+      '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' +
+        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
         _.map(_.keys(self.maps), function(key) {
           var map = self.maps[key];
           var sitemap = '  <sitemap>\n' +
@@ -279,7 +383,8 @@ module.exports = {
     self.writeXmlMap = function(file, map) {
       self.writeFile(file,
         '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' +
+        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
         map +
         '</urlset>\n'
       );
@@ -367,19 +472,27 @@ module.exports = {
         if (typeof(page.siteMapPriority) === 'number') {
           priority = page.siteMapPriority;
         }
-        self.write(locale, '  <url><priority>' + priority + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
+        self.write(locale, {
+          url: {
+            priority: priority,
+            changefreq: 'daily',
+            loc: url,
+            workflowGuid: page.workflowGuid,
+            workflowLocale: locale
+          }
+        });
       }
       _.each(page._children || [], function(page) {
         self.output(page);
       });
     };
     
-    // Append `s` to a buffer set aside for the map entries
+    // Append `s` to an array set aside for the map entries
     // for the host `locale`.
     
     self.write = function(locale, s) {
-      self.maps[locale] = self.maps[locale] || '';
-      self.maps[locale] += s;
+      self.maps[locale] = self.maps[locale] || [];
+      self.maps[locale].push(s);
     };
         
     self.addRoutes = function() {
