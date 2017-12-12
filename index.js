@@ -90,7 +90,7 @@ module.exports = {
       function init(callback) {
         self.format = argv.format || options.format || 'xml';
         
-        self.indent = (typeof(argv.indent) !== undefined) ? argv.indent : options.indent;
+        self.indent = (typeof(argv.indent) !== 'undefined') ? argv.indent : options.indent;
         self.excludeTypes = options.excludeTypes || [];
         self.perLocale = options.perLocale || argv['per-locale'];
         // Exception: plaintext sitemaps and sitemap indexes don't go
@@ -111,7 +111,7 @@ module.exports = {
         
         if (self.workflow) {
           locales = _.filter(_.keys(self.workflow.locales), function(locale) {
-            return !locale.match(/\-draft$/);
+            return !locale.match(/-draft$/) && !self.workflow.locales[locale].private;
           });
         }
 
@@ -203,7 +203,7 @@ module.exports = {
           return callback(err);
         }
         if (!home) {
-          return callback('no homepage for the ' + locale + 'locale');
+          return callback('no homepage for the ' + locale + ' locale');
         }
         self.output(home);
         return callback(null);
@@ -217,7 +217,7 @@ module.exports = {
         });
       });
       return async.eachSeries(modules, function(module, callback) {
-        if (_.contains(self.excludeTypes, module.name)) {
+        if (_.includes(self.excludeTypes, module.name)) {
           return setImmediate(callback);
         }
         // Paginate through 100 (by default) at a time to
