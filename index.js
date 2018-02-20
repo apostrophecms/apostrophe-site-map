@@ -319,13 +319,13 @@ module.exports = {
         }
         function element(k, v) {
           xml += '<' + k;
-          if (v._attributes) {
+          if (v && v._attributes) {
             _.each(v._attributes, function(av, a) {
               xml += ' ' + a + '="' + self.apos.utils.escapeHtml(av) + '"';
             });
           }
           xml += '>';
-          xml += self.stringify(v);
+          xml += self.stringify(v || '');
           xml += '</' + k + '>\n';
         }
       });
