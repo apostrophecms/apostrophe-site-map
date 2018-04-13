@@ -221,6 +221,8 @@ modules: {
 
 ## Changelog
 
+2.3.3: a bug that broke static sitemap file generation in the absence of workflow was fixed.
+
 2.3.2: a bug that broke the sitemap generator in the absence of workflow was fixed. Thanks to Peter Shaw.
 
 2.3.1: a bug that broke the sitemap generator in the presence of private workflow locales was fixed. Thanks to Albert R. Timashev.
