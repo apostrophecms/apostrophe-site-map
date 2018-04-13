@@ -457,8 +457,9 @@ module.exports = {
           return;
         }
       }
+      var skipThis = _.includes(self.excludeTypes, page.type);
       var url;
-      if (self.format === 'text') {
+      if (!skipThis && self.format === 'text') {
         if (self.indent) {
           var i;
           for (i = 0; (i < page.level); i++) {
@@ -466,7 +467,7 @@ module.exports = {
           }
           self.write(locale, page._url + '\n');
         }
-      } else {
+      } else if (!skipThis) {
         if (_.includes(self.excludeTypes, page.type)) {
           return;
         }
