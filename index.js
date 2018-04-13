@@ -467,6 +467,9 @@ module.exports = {
           self.write(locale, page._url + '\n');
         }
       } else {
+        if (_.includes(self.excludeTypes, page.type)) {
+          return;
+        }
         url = page._url;
         var priority = (1.0 - page.level / 10);
         if (typeof(page.siteMapPriority) === 'number') {
