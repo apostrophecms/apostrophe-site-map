@@ -459,7 +459,7 @@ module.exports = {
       }
       var skipThis = _.includes(self.excludeTypes, page.type);
       var url;
-      if (!skipThis && self.format === 'text') {
+      if ((!skipThis) && self.format === 'text') {
         if (self.indent) {
           var i;
           for (i = 0; (i < page.level); i++) {
