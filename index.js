@@ -457,31 +457,40 @@ module.exports = {
           return;
         }
       }
-      var url;
-      if (self.format === 'text') {
-        if (self.indent) {
-          var i;
-          for (i = 0; (i < page.level); i++) {
-            self.write(locale, '  ');
+
+      if (!_.includes(self.excludeTypes, page.type)) {
+        var url;
+
+        if (self.format === 'text') {
+          if (self.indent) {
+            var i;
+
+            for (i = 0; (i < page.level); i++) {
+              self.write(locale, '  ');
+            }
+
+            self.write(locale, page._url + '\n');
           }
-          self.write(locale, page._url + '\n');
-        }
-      } else {
-        url = page._url;
-        var priority = (1.0 - page.level / 10);
-        if (typeof(page.siteMapPriority) === 'number') {
-          priority = page.siteMapPriority;
-        }
-        self.write(locale, {
-          url: {
-            priority: priority,
-            changefreq: 'daily',
-            loc: url,
-            workflowGuid: page.workflowGuid,
-            workflowLocale: locale
+        } else {
+          url = page._url;
+          var priority = (1.0 - page.level / 10);
+
+          if (typeof (page.siteMapPriority) === 'number') {
+            priority = page.siteMapPriority;
           }
-        });
+
+          self.write(locale, {
+            url: {
+              priority: priority,
+              changefreq: 'daily',
+              loc: url,
+              workflowGuid: page.workflowGuid,
+              workflowLocale: locale
+            }
+          });
+        }
       }
+
       _.each(page._children || [], function(page) {
         self.output(page);
       });
