@@ -10,8 +10,14 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    try {
+      require('apostrophe/test-lib/util').destroy(apos, done);
+    } catch (e) {
+      console.warn('Old version of apostrophe does not export test-lib/util library, just dropping old test db');
+      apos.db.dropDatabase();
+      setTimeout(done, 1000);
+    }
   });
 
   it('perLocale: should be a property of the apos object', function(done) {
@@ -208,8 +214,14 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
 
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    try {
+      require('apostrophe/test-lib/util').destroy(apos, done);
+    } catch (e) {
+      console.warn('Old version of apostrophe does not export test-lib/util library, just dropping old test db');
+      apos.db.dropDatabase();
+      setTimeout(done, 1000);
+    }
   });
 
   it('should initialize', function(done) {
@@ -385,8 +397,14 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
   var apos;
   this.timeout(5000);
 
-  after(function() {
-    apos.db.dropDatabase();
+  after(function(done) {
+    try {
+      require('apostrophe/test-lib/util').destroy(apos, done);
+    } catch (e) {
+      console.warn('Old version of apostrophe does not export test-lib/util library, just dropping old test db');
+      apos.db.dropDatabase();
+      setTimeout(done, 1000);
+    }
   });
 
   it('should be a property of the apos object', function(done) {
