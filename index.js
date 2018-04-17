@@ -262,7 +262,9 @@ module.exports = {
       if (!self.perLocale) {
         // Simple single-file sitemap
         self.file = self.caching ? 'sitemap.xml' : (self.apos.argv.file || '/dev/stdout');
-        var map = _.map(self.maps.default, self.stringify).join('\n');
+        var map = _.map(_.keys(self.maps), function(locale) {
+          return _.map(self.maps[locale], self.stringify).join('\n');
+        }).join('\n');
         self.writeMap(self.file, map);
       } else {
         // They should be broken down by host,
