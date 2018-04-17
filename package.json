@@ -10,7 +10,8 @@
   },
   "devDependencies": {
     "apostrophe": "^2.41.0",
-    "apostrophe-workflow": "^2.4.1"
+    "apostrophe-workflow": "^2.4.1",
+    "mocha": "^5.1.0"
   },
   "scripts": {
     "test": "mocha test/test.js"
