@@ -221,6 +221,8 @@ modules: {
 
 ## Changelog
 
+2.3.4: fix for static sitemap generation of workflow-driven sites without the `perLocale` option, along with new unit tests to verify this has no negative impact on "simple" sites.
+
 2.3.3: a bug that broke static sitemap file generation in the absence of workflow was fixed.
 
 2.3.2: a bug that broke the sitemap generator in the absence of workflow was fixed. Thanks to Peter Shaw.
