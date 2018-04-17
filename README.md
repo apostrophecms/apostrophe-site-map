@@ -179,7 +179,7 @@ Or do it in `app.js` when configuring the module:
   }
 ```
 
-You may specify multiple doc types to exclude.
+You may specify multiple doc types to exclude. You may also exclude page types the same way by adding their doc type to the array, e.g., `styleguide`.
 
 You can also do this at the command line, which is helpful when generating a map just for content strategy purposes:
 
