@@ -1,6 +1,6 @@
 var moment = require('moment');
 var async = require('async');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var fs = require('fs');
 var url = require('url');
 
@@ -11,7 +11,7 @@ module.exports = {
   // Cache sitemaps for 1 hour by default. Depending on pagerank
   // Google may look at your sitemap somewhere between daily and
   // monthly, so don't get your hopes up too far about changing this
-  
+
   cacheLifetime: 60 * 60,
 
   piecesPerBatch: 100,
@@ -27,28 +27,28 @@ module.exports = {
     self.addRoutes();
     self.enableCache();
   },
-  
+
   construct: function(self, options) {
 
     self.caching = true;
-    
+
     self.cacheLifetime = options.cacheLifetime;
 
     self.piecesPerBatch = options.piecesPerBatch;
-    
+
     self.clearTask = function(apos, argv, callback) {
       // Just forget the current sitemaps to make room
       // for regeneration on the next request
       return self.cache.clear(callback);
     };
-    
+
     self.mapTask = function(apos, argv, callback) {
       if (argv['update-cache']) {
         self.caching = true;
       } else {
         self.caching = false;
       }
-            
+
       if (!apos.options.baseUrl) {
         return callback(new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
@@ -57,14 +57,14 @@ module.exports = {
           'Usually you will only do this in data/local.js, on production.'
         ));
       }
-      
+
       return self.map(callback);
     };
-    
+
     self.map = function(callback) {
 
       self.workflow = self.apos.modules['apostrophe-workflow'];
-      
+
       var argv = self.apos.argv;
 
       if (argv['exclude-types']) {
@@ -86,15 +86,15 @@ module.exports = {
       function lock(callback) {
         return self.apos.locks.lock('apostrophe-site-map', callback);
       }
-      
+
       function init(callback) {
         self.format = argv.format || options.format || 'xml';
-        
+
         self.indent = (typeof(argv.indent) !== 'undefined') ? argv.indent : options.indent;
         self.excludeTypes = options.excludeTypes || [];
         self.perLocale = options.perLocale || argv['per-locale'];
         // Exception: plaintext sitemaps and sitemap indexes don't go
-        // together, so we can presume that if they explicitly ask 
+        // together, so we can presume that if they explicitly ask
         // for plaintext they are just doing content strategy and we
         // should produce a single report
         if (self.format === 'text') {
@@ -102,13 +102,13 @@ module.exports = {
         }
         return callback(null);
       }
-      
+
       function map(callback) {
         self.maps = {};
         self.today = moment().format('YYYY-MM-DD');
 
         var locales = [ defaultLocale ];
-        
+
         if (self.workflow) {
           locales = _.filter(_.keys(self.workflow.locales), function(locale) {
             return !locale.match(/-draft$/) && !self.workflow.locales[locale].private;
@@ -167,7 +167,7 @@ module.exports = {
 
         each(function(entry) {
           delete entry.url.workflowLocale;
-          delete entry.url.workflowGuid;          
+          delete entry.url.workflowGuid;
         });
 
         return setImmediate(callback);
@@ -187,11 +187,11 @@ module.exports = {
         }
 
       }
-      
+
       function write(callback) {
         return self.writeSitemap(callback);
       }
-      
+
       function unlock(callback) {
         return self.apos.locks.unlock('apostrophe-site-map', callback);
       }
@@ -209,7 +209,7 @@ module.exports = {
         return callback(null);
       });
     };
-    
+
     self.getPieces = function(req, locale, callback) {
       var modules = _.filter(self.apos.modules, function(module, name) {
         return _.find(module.__meta.chain, function(entry) {
@@ -257,7 +257,7 @@ module.exports = {
         }, callback);
       }, callback);
     };
-        
+
     self.writeSitemap = function(callback) {
       if (!self.perLocale) {
         // Simple single-file sitemap
@@ -333,7 +333,7 @@ module.exports = {
       });
       return xml;
     };
-    
+
     self.ensureDir = function(dir) {
       if (!self.caching) {
         dir = self.apos.rootDir + '/public/' + dir;
@@ -344,7 +344,7 @@ module.exports = {
         }
       }
     };
-    
+
     self.writeIndex = function() {
       var now = new Date();
       if (!self.apos.baseUrl) {
@@ -371,9 +371,9 @@ module.exports = {
         }).join('') +
         '</sitemapindex>\n'
       );
-    
+
     };
-    
+
     self.writeMap = function(file, map) {
       if (self.format === 'xml') {
         self.writeXmlMap(file, map);
@@ -381,7 +381,7 @@ module.exports = {
         self.writeFile(file, map);
       }
     };
-    
+
     self.writeXmlMap = function(file, map) {
       self.writeFile(file,
         '<?xml version="1.0" encoding="UTF-8"?>\n' +
@@ -391,7 +391,7 @@ module.exports = {
         '</urlset>\n'
       );
     };
-    
+
     self.writeFile = function(filename, s) {
       if (!self.caching) {
         filename = require('path').resolve(self.apos.rootDir + '/public', filename);
@@ -409,7 +409,7 @@ module.exports = {
         });
       }
     };
-    
+
     self.writeToCache = function(callback) {
       return async.series([
         clear,
@@ -419,21 +419,21 @@ module.exports = {
       function clear(callback) {
         return self.cache.clear(callback);
       }
-      
+
       function insert(callback) {
         return async.eachSeries(self.cacheOutput, function(doc, callback) {
           return self.cache.set(doc.filename, doc, self.cacheLifetime, callback);
         }, callback);
       }
     };
-    
+
     // Override to do more. You can invoke `self.output(doc)`
     // from here as many times as you like.
 
     self.custom = function(req, locale, callback) {
       return callback(null);
     };
-    
+
     self.findPages = function(req) {
       return self.apos.pages.find(req, { level: 0 }).children({ depth: 20 });
     };
@@ -441,7 +441,7 @@ module.exports = {
     self.findPieces = function(req, module) {
       return module.find(req).published(true).joins(false).areas(false);
     };
-    
+
     // Output the sitemap entry for the given doc, including its children if any.
     // The entry is buffered for output as part of the map for the appropriate
     // locale. If the workflow module is not in use they all accumulate together
@@ -497,15 +497,15 @@ module.exports = {
         self.output(page);
       });
     };
-    
+
     // Append `s` to an array set aside for the map entries
     // for the host `locale`.
-    
+
     self.write = function(locale, s) {
       self.maps[locale] = self.maps[locale] || [];
       self.maps[locale].push(s);
     };
-        
+
     self.addRoutes = function() {
       // Deliver from our tiny little fake cache filesystem
       self.apos.app.get('/sitemap.xml', function(req, res) {
@@ -515,7 +515,7 @@ module.exports = {
         return self.sendCache(res, 'sitemaps/' + req.params[0]);
       });
     };
-    
+
     self.sendCache = function(res, path) {
       return self.cache.get(path, function(err, file) {
         if (err) {
@@ -543,17 +543,17 @@ module.exports = {
         }
         return res.contentType('text/xml').send(file.data);
       });
-      
+
       function notFound() {
         return res.status(404).send('not found');
       }
-      
+
       function fail(err) {
         console.error(err);
         return res.status(500).send('error');
       }
     };
-    
+
     self.cacheAndRetry = function(res, path) {
       return self.map(function(err) {
         if (err) {
@@ -566,7 +566,7 @@ module.exports = {
         return res.status(500).send('error');
       }
     };
-    
+
     self.enableCache = function() {
       self.cache = self.apos.caches.get('apostrophe-sitemap');
     };

@@ -1,11 +1,11 @@
 {
   "name": "apostrophe-site-map",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Generate site maps for sites powered by the Apostrophe CMS.",
   "main": "index.js",
   "dependencies": {
+    "@sailshq/lodash": "^3.10.3",
     "async": "^1.5.2",
-    "lodash": "^3.10.1",
     "moment": "^2.19.2"
   },
   "devDependencies": {
