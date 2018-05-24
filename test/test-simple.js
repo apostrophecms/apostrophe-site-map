@@ -1,5 +1,5 @@
 var assert = require('assert');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var async = require('async');
 var request = require('request');
 var fs = require('fs');
@@ -104,7 +104,7 @@ describe('Apostrophe Sitemap: simple site without workflow', function() {
       }
     });
   });
-  
+
   it('insert a product for test purposes', function(done) {
     var product = _.assign(apos.modules.products.newInstance(), {
       title: 'Cheese',
@@ -115,7 +115,7 @@ describe('Apostrophe Sitemap: simple site without workflow', function() {
       done();
     });
   });
-  
+
   it('make sure everything is published and out of the trash for test purposes', function(done) {
     return apos.docs.db.update({}, {
       $set: {

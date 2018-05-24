@@ -1,5 +1,5 @@
 var assert = require('assert');
-var _ = require('lodash');
+var _ = require('@sailshq/lodash');
 var async = require('async');
 var request = require('request');
 var fs = require('fs');
@@ -124,7 +124,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
             // We don't need prefixes for fr because
             // that hostname is not shared with other
             // locales
-          }          
+          }
         }
       },
       afterInit: function(callback) {
@@ -137,7 +137,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
       }
     });
   });
-  
+
   it('insert a product for test purposes', function(done) {
     var product = _.assign(apos.modules.products.newInstance(), {
       title: 'Cheese',
@@ -148,7 +148,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
       done();
     });
   });
-  
+
   it('make sure everything is published and out of the trash for test purposes', function(done) {
     return apos.docs.db.update({}, {
       $set: {
@@ -328,7 +328,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
             // We don't need prefixes for fr because
             // that hostname is not shared with other
             // locales
-          }          
+          }
         }
       },
       afterInit: function(callback) {
@@ -352,7 +352,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
       done();
     });
   });
-  
+
   it('make sure everything is published and out of the trash for test purposes', function(done) {
     return apos.docs.db.update({}, {
       $set: {
@@ -366,7 +366,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
       done();
     });
   });
-  
+
   it('should generate a suitable all-in-one sitemap', function(done) {
     this.timeout(5000);
     get('http://localhost:7778/sitemap.xml', function(err, xml) {
@@ -512,7 +512,7 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
       }
     });
   });
-  
+
   it('insert a product for test purposes', function(done) {
     var product = _.assign(apos.modules.products.newInstance(), {
       title: 'Cheese',
@@ -523,7 +523,7 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
       done();
     });
   });
-  
+
   it('make sure everything is published and out of the trash for test purposes', function(done) {
     return apos.docs.db.update({}, {
       $set: {
