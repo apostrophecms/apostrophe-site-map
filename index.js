@@ -168,17 +168,18 @@ module.exports = {
         each(function(entry) {
           delete entry.url.workflowLocale;
           delete entry.url.workflowGuid;
-        });
+        }, true);
 
         return setImmediate(callback);
 
-        function each(iterator) {
+        function each(iterator, ignoreWorkflow) {
           _.each(self.maps, function(map) {
             _.each(map, function(entry) {
               if (typeof(entry) !== 'object') {
                 return;
               }
-              if (!entry.url.workflowGuid) {
+
+              if (!entry.url.workflowGuid && !ignoreWorkflow) {
                 return;
               }
               iterator(entry);
