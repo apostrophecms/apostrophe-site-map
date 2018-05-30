@@ -68,7 +68,7 @@ module.exports = {
       var argv = self.apos.argv;
 
       if (argv['exclude-types']) {
-        self.excludeTypes = excludeTypes.concat(argv['exclude-types'].split(','));
+        self.excludeTypes = self.excludeTypes.concat(argv['exclude-types'].split(','));
       }
 
       if (self.caching) {
