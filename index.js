@@ -51,7 +51,7 @@ module.exports = {
         self.caching = false;
       }
 
-      if (!apos.options.baseUrl) {
+      if (!self.baseUrl) {
         return callback(new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
           'to use this task. Example: baseUrl: "http://mycompany.com"\n\n' +
