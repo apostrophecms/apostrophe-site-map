@@ -36,6 +36,8 @@ module.exports = {
 
     self.piecesPerBatch = options.piecesPerBatch;
 
+    self.baseUrl = options.baseUrl || self.apos.baseUrl;
+
     self.clearTask = function(apos, argv, callback) {
       // Just forget the current sitemaps to make room
       // for regeneration on the next request
@@ -49,7 +51,7 @@ module.exports = {
         self.caching = false;
       }
 
-      if (!apos.options.baseUrl) {
+      if (!self.baseUrl) {
         return callback(new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
           'to use this task. Example: baseUrl: "http://mycompany.com"\n\n' +
@@ -348,7 +350,7 @@ module.exports = {
 
     self.writeIndex = function() {
       var now = new Date();
-      if (!self.apos.baseUrl) {
+      if (!self.baseUrl) {
         throw new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
           'to use sitemap indexes. Example: baseUrl: "http://mycompany.com"\n\n' +
@@ -364,7 +366,7 @@ module.exports = {
         _.map(_.keys(self.maps), function(key) {
           var map = self.maps[key];
           var sitemap = '  <sitemap>\n' +
-            '    <loc>' + self.apos.baseUrl + self.apos.prefix + '/sitemaps/' + key + '.xml'
+            '    <loc>' + self.baseUrl + self.apos.prefix + '/sitemaps/' + key + '.xml'
               + '</loc>\n' +
             '    <lastmod>' + now.toISOString() + '</lastmod>\n' +
           '  </sitemap>\n';

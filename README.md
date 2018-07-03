@@ -36,6 +36,24 @@ This module generates a sitemap that includes all of the pages on your site that
 }
 ```
 
+#### Alternative configuration
+
+If you don't like to modify/overwrite the baseUrl for the site or keep the site without a baseUrl, you can add baseUrl in the configuration of the module:
+
+```javascript
+{
+  // No baseUrl here
+  modules: {
+    {
+      'apostrophe-site-map': {
+        baseUrl: 'http://example.com',
+        excludeTypes: []
+      }
+    }
+  }
+}
+```
+
 * Just launch your site as you normally would. In development that might just be:
 
 ```
