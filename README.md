@@ -23,14 +23,12 @@ This module generates a sitemap that includes all of the pages on your site that
   // You should configure `baseUrl` to ensure full URLs in your sitemap
   baseUrl: 'http://example.com',
   modules: {
-    {
-      'apostrophe-site-map': {
-        // array of doc types you do NOT want
-        // to include, even though they are
-        // accessible on the site. You can also
-        // do this at the command line.
-        excludeTypes: []
-      }
+    'apostrophe-site-map': {
+      // array of doc types you do NOT want
+      // to include, even though they are
+      // accessible on the site. You can also
+      // do this at the command line.
+      excludeTypes: []
     }
   }
 }
@@ -44,11 +42,9 @@ If you don't like to modify/overwrite the baseUrl for the site or keep the site 
 {
   // No baseUrl here
   modules: {
-    {
-      'apostrophe-site-map': {
-        baseUrl: 'http://example.com',
-        excludeTypes: []
-      }
+    'apostrophe-site-map': {
+      baseUrl: 'http://example.com',
+      excludeTypes: []
     }
   }
 }
