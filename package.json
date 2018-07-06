@@ -1,6 +1,6 @@
 {
   "name": "apostrophe-site-map",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "Generate site maps for sites powered by the Apostrophe CMS.",
   "main": "index.js",
   "dependencies": {

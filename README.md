@@ -239,6 +239,8 @@ modules: {
 
 ## Changelog
 
+2.4.4: Fixes issue where children of unpublished top-level pages were left out of the site map. Additional documentation improvements.
+
 2.4.3: fix for apps not using apostrophe-workflow, removing workflow-related xml tags that were left in the sitemap.
 
 2.4.1: fix for static sitemap generation of workflow-driven sites without the `perLocale` option, along with new unit tests to verify this has no negative impact on "simple" sites. Also uses the newly exported `destroy` mechanism in its unit testing so we can use Mocha 5 and know that Apostrophe is truly freeing all resources in `apos.destroy`.
