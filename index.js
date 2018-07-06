@@ -201,14 +201,11 @@ module.exports = {
     };
 
     self.getPages = function(req, locale, callback) {
-      return self.findPages(req).toObject(function(err, home) {
+      return self.apos.pages.find(req).areas(false).joins(false).sort({ level: 1, rank: 1 }).toArray(function(err, pages) {
         if (err) {
           return callback(err);
         }
-        if (!home) {
-          return callback('no homepage for the ' + locale + ' locale');
-        }
-        self.output(home);
+        _.each(pages, self.output);
         return callback(null);
       });
     };
@@ -437,10 +434,6 @@ module.exports = {
       return callback(null);
     };
 
-    self.findPages = function(req) {
-      return self.apos.pages.find(req, { level: 0 }).children({ depth: 20 });
-    };
-
     self.findPieces = function(req, module) {
       return module.find(req).published(true).joins(false).areas(false);
     };
@@ -496,9 +489,6 @@ module.exports = {
         }
       }
 
-      _.each(page._children || [], function(page) {
-        self.output(page);
-      });
     };
 
     // Append `s` to an array set aside for the map entries
