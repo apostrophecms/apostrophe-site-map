@@ -235,6 +235,8 @@ modules: {
 
 ## Changelog
 
+2.4.5: Fixes issue where the `siteMapPriority` field could not be arranged via `arrangeFields`.
+
 2.4.4: Fixes issue where children of unpublished top-level pages were left out of the site map. Additional documentation improvements.
 
 2.4.3: fix for apps not using apostrophe-workflow, removing workflow-related xml tags that were left in the sitemap.
