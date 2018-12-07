@@ -36,6 +36,8 @@ module.exports = {
 
     self.piecesPerBatch = options.piecesPerBatch;
 
+    self.baseUrl = options.baseUrl || self.apos.baseUrl;
+
     self.clearTask = function(apos, argv, callback) {
       // Just forget the current sitemaps to make room
       // for regeneration on the next request
@@ -49,7 +51,7 @@ module.exports = {
         self.caching = false;
       }
 
-      if (!apos.options.baseUrl) {
+      if (!self.baseUrl) {
         return callback(new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
           'to use this task. Example: baseUrl: "http://mycompany.com"\n\n' +
@@ -168,17 +170,18 @@ module.exports = {
         each(function(entry) {
           delete entry.url.workflowLocale;
           delete entry.url.workflowGuid;
-        });
+        }, true);
 
         return setImmediate(callback);
 
-        function each(iterator) {
+        function each(iterator, ignoreWorkflow) {
           _.each(self.maps, function(map) {
             _.each(map, function(entry) {
               if (typeof(entry) !== 'object') {
                 return;
               }
-              if (!entry.url.workflowGuid) {
+
+              if (!entry.url.workflowGuid && !ignoreWorkflow) {
                 return;
               }
               iterator(entry);
@@ -198,14 +201,11 @@ module.exports = {
     };
 
     self.getPages = function(req, locale, callback) {
-      return self.findPages(req).toObject(function(err, home) {
+      return self.apos.pages.find(req).areas(false).joins(false).sort({ level: 1, rank: 1 }).toArray(function(err, pages) {
         if (err) {
           return callback(err);
         }
-        if (!home) {
-          return callback('no homepage for the ' + locale + ' locale');
-        }
-        self.output(home);
+        _.each(pages, self.output);
         return callback(null);
       });
     };
@@ -347,7 +347,7 @@ module.exports = {
 
     self.writeIndex = function() {
       var now = new Date();
-      if (!self.apos.baseUrl) {
+      if (!self.baseUrl) {
         throw new Error(
           'You must specify the top-level baseUrl option when configuring Apostrophe\n' +
           'to use sitemap indexes. Example: baseUrl: "http://mycompany.com"\n\n' +
@@ -363,7 +363,7 @@ module.exports = {
         _.map(_.keys(self.maps), function(key) {
           var map = self.maps[key];
           var sitemap = '  <sitemap>\n' +
-            '    <loc>' + self.apos.baseUrl + self.apos.prefix + '/sitemaps/' + key + '.xml'
+            '    <loc>' + self.baseUrl + self.apos.prefix + '/sitemaps/' + key + '.xml'
               + '</loc>\n' +
             '    <lastmod>' + now.toISOString() + '</lastmod>\n' +
           '  </sitemap>\n';
@@ -434,10 +434,6 @@ module.exports = {
       return callback(null);
     };
 
-    self.findPages = function(req) {
-      return self.apos.pages.find(req, { level: 0 }).children({ depth: 20 });
-    };
-
     self.findPieces = function(req, module) {
       return module.find(req).published(true).joins(false).areas(false);
     };
@@ -493,9 +489,6 @@ module.exports = {
         }
       }
 
-      _.each(page._children || [], function(page) {
-        self.output(page);
-      });
     };
 
     // Append `s` to an array set aside for the map entries

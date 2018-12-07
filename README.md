@@ -23,14 +23,28 @@ This module generates a sitemap that includes all of the pages on your site that
   // You should configure `baseUrl` to ensure full URLs in your sitemap
   baseUrl: 'http://example.com',
   modules: {
-    {
-      'apostrophe-site-map': {
-        // array of doc types you do NOT want
-        // to include, even though they are
-        // accessible on the site. You can also
-        // do this at the command line.
-        excludeTypes: []
-      }
+    'apostrophe-site-map': {
+      // array of doc types you do NOT want
+      // to include, even though they are
+      // accessible on the site. You can also
+      // do this at the command line.
+      excludeTypes: []
+    }
+  }
+}
+```
+
+#### Alternative configuration
+
+If you don't like to modify/overwrite the baseUrl for the site or keep the site without a baseUrl, you can add baseUrl in the configuration of the module:
+
+```javascript
+{
+  // No baseUrl here
+  modules: {
+    'apostrophe-site-map': {
+      baseUrl: 'http://example.com',
+      excludeTypes: []
     }
   }
 }
@@ -220,6 +234,12 @@ modules: {
 ```
 
 ## Changelog
+
+2.4.5: clone the priority field before adding it so we do not get into issues with `arrangeFields`.
+
+2.4.4: Fixes issue where children of unpublished top-level pages were left out of the site map. Additional documentation improvements.
+
+2.4.3: fix for apps not using apostrophe-workflow, removing workflow-related xml tags that were left in the sitemap.
 
 2.4.1: fix for static sitemap generation of workflow-driven sites without the `perLocale` option, along with new unit tests to verify this has no negative impact on "simple" sites. Also uses the newly exported `destroy` mechanism in its unit testing so we can use Mocha 5 and know that Apostrophe is truly freeing all resources in `apos.destroy`.
 
