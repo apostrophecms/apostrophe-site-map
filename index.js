@@ -143,10 +143,7 @@ function Construct(options, callback) {
           }
           fs.writeSync(out, page.slug);
         } else {
-          var pageLevel = (1.0 - page.level / 10);
-          if (pageLevel < 0) {
-            pageLevel = 0.0;
-          }
+          var pageLevel = (page.level <= 10) ? (1.0 - page.level / 10) : 0.1;
           var url = (trustUrl && page.url) || (host + (site.prefix || '') + page.slug);
           fs.writeSync(out, '  <url><priority>' + pageLevel.toFixed(1) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
         }
