@@ -143,8 +143,9 @@ function Construct(options, callback) {
           }
           fs.writeSync(out, page.slug);
         } else {
+          var pageLevel = (page.level < 10) ? (1.0 - page.level / 10) : 0.1;
           var url = (trustUrl && page.url) || (host + (site.prefix || '') + page.slug);
-          fs.writeSync(out, '  <url><priority>' + (1.0 - page.level / 10) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
+          fs.writeSync(out, '  <url><priority>' + pageLevel.toFixed(1) + '</priority><changefreq>daily</changefreq><loc>' + url + '</loc></url>\n');
         }
         _.each(page.children, function(page) {
           output(page);
