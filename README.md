@@ -1,6 +1,6 @@
-## Currently for A2 0.5.x sites only
+# This is a legacy version
 
-This module is currently for A2 0.5.x sites only. It has not yet been ported to A2 2.x.
+Use the apostrophe-site-map 2.x series instead with apostrophe 2.x.
 
 # apostrophe-site-map
 

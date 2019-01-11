@@ -1,3 +1,6 @@
+test/public/css/master*
+test/public
+test/locales
 npm-debug.log
 *.DS_Store
 node_modules
