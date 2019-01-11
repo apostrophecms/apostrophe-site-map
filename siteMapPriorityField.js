@@ -8,7 +8,7 @@ module.exports = {
   label: 'Sitemap Priority',
   required: false,
   def: null,
-  min: 0,
+  min: 0.1,
   max: 1.0,
-  help: 'A number between 0.0 and 1.0. 1.0 is highest priority. Not all types of content appear in sitemaps.'
+  help: 'A number between 0.1 and 1.0. 1.0 is highest priority. Not all types of content appear in sitemaps.'
 };
