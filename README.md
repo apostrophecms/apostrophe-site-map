@@ -235,6 +235,8 @@ modules: {
 
 ## Changelog
 
+2.4.7: Fixes a bug in the `exclude-types` argument usage.
+
 2.4.6: never generate a priority below 0.1.
 
 2.4.5: clone the priority field before adding it so we do not get into issues with `arrangeFields`.
