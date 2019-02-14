@@ -235,6 +235,8 @@ modules: {
 
 ## Changelog
 
+2.4.6: never generate a priority below 0.1.
+
 2.4.5: clone the priority field before adding it so we do not get into issues with `arrangeFields`.
 
 2.4.4: Fixes issue where children of unpublished top-level pages were left out of the site map. Additional documentation improvements.

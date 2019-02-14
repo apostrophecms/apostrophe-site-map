@@ -473,7 +473,7 @@ module.exports = {
           }
         } else {
           url = page._url;
-          var priority = (1.0 - page.level / 10);
+          var priority = (page.level < 10) ? (1.0 - page.level / 10) : 0.1;
 
           if (typeof (page.siteMapPriority) === 'number') {
             priority = page.siteMapPriority;
