@@ -151,7 +151,13 @@ module.exports = {
         });
 
         each(function(entry) {
-          entry.url['xhtml:link'] = [];
+          entry.url['xhtml:link'] = [{
+            _attributes: {
+              rel: 'alternate',
+              hreflang: entry.url.workflowLocale,
+              href: entry.url.loc
+            }
+          }];
           var alternatives = alternativesByGuid[entry.url.workflowGuid];
           _.each(alternatives, function(alternative) {
             if (alternative === entry) {
