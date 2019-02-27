@@ -235,6 +235,8 @@ modules: {
 
 ## Changelog
 
+2.4.7: per Google's guidelines a `<link>` should contain an `<xhtml:link hreflang>` for every locale, including the locale of the `<link>` itself, which was formerly excluded. Thanks to Fredrik Ekelund for this contribution.
+
 2.4.6: never generate a priority below 0.1.
 
 2.4.5: clone the priority field before adding it so we do not get into issues with `arrangeFields`.
