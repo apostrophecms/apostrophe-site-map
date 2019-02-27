@@ -2,7 +2,82 @@ var assert = require('assert');
 var _ = require('@sailshq/lodash');
 var async = require('async');
 var request = require('request');
+var cheerio = require('cheerio');
 var fs = require('fs');
+
+var parkedPages = [
+  {
+    title: 'Tab One',
+    type: 'default',
+    slug: '/tab-one',
+    _children: [
+      {
+        title: 'Tab One Child One',
+        type: 'default',
+        slug: '/tab-one/child-one'
+      },
+      {
+        title: 'Tab One Child Two',
+        type: 'default',
+        slug: '/tab-one/child-two'
+      },
+    ]
+  },
+  {
+    title: 'Tab Two',
+    type: 'default',
+    slug: '/tab-two',
+    _children: [
+      {
+        title: 'Tab Two Child One',
+        type: 'default',
+        slug: '/tab-two/child-one'
+      },
+      {
+        title: 'Tab Two Child Two',
+        type: 'default',
+        slug: '/tab-two/child-two'
+      },
+    ]
+  },
+  {
+    title: 'Products',
+    type: 'products-page',
+    slug: '/products'
+  }
+];
+
+var parkedPageTypes = [
+  {
+    name: 'home',
+    label: 'Home'
+  },
+  {
+    name: 'default',
+    label: 'Default'
+  },
+  {
+    name: 'products',
+    label: 'Products'
+  }
+];
+
+var workflowLocales = [
+  {
+    name: 'default',
+    private: true,
+    children: [
+      {
+        name: 'fr',
+        label: 'French'
+      },
+      {
+        name: 'en',
+        label: 'English'
+      }
+    ]
+  }
+];
 
 describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', function() {
 
@@ -32,61 +107,8 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
           perLocale: true
         },
         'apostrophe-pages': {
-          park: [
-            {
-              title: 'Tab One',
-              type: 'default',
-              slug: '/tab-one',
-              _children: [
-                {
-                  title: 'Tab One Child One',
-                  type: 'default',
-                  slug: '/tab-one/child-one'
-                },
-                {
-                  title: 'Tab One Child Two',
-                  type: 'default',
-                  slug: '/tab-one/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Tab Two',
-              type: 'default',
-              slug: '/tab-two',
-              _children: [
-                {
-                  title: 'Tab Two Child One',
-                  type: 'default',
-                  slug: '/tab-two/child-one'
-                },
-                {
-                  title: 'Tab Two Child Two',
-                  type: 'default',
-                  slug: '/tab-two/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Products',
-              type: 'products-page',
-              slug: '/products'
-            }
-          ],
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'default',
-              label: 'Default'
-            },
-            {
-              name: 'products',
-              label: 'Products'
-            }
-          ]
+          park: _.cloneDeep(parkedPages),
+          types: _.cloneDeep(parkedPageTypes)
         },
         'products': {
           extend: 'apostrophe-pieces',
@@ -96,22 +118,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes with perLocale', f
           extend: 'apostrophe-pieces-pages'
         },
         'apostrophe-workflow': {
-          locales: [
-            {
-              name: 'default',
-              private: true,
-              children: [
-                {
-                  name: 'fr',
-                  label: 'French'
-                },
-                {
-                  name: 'en',
-                  label: 'English'
-                }
-              ]
-            }
-          ],
+          locales: _.cloneDeep(workflowLocales),
           hostnames: {
             'fr': 'exemple.fr',
             'default': 'example.com',
@@ -236,61 +243,8 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
           // perLocale is not set
         },
         'apostrophe-pages': {
-          park: [
-            {
-              title: 'Tab One',
-              type: 'default',
-              slug: '/tab-one',
-              _children: [
-                {
-                  title: 'Tab One Child One',
-                  type: 'default',
-                  slug: '/tab-one/child-one'
-                },
-                {
-                  title: 'Tab One Child Two',
-                  type: 'default',
-                  slug: '/tab-one/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Tab Two',
-              type: 'default',
-              slug: '/tab-two',
-              _children: [
-                {
-                  title: 'Tab Two Child One',
-                  type: 'default',
-                  slug: '/tab-two/child-one'
-                },
-                {
-                  title: 'Tab Two Child Two',
-                  type: 'default',
-                  slug: '/tab-two/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Products',
-              type: 'products-page',
-              slug: '/products'
-            }
-          ],
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'default',
-              label: 'Default'
-            },
-            {
-              name: 'products',
-              label: 'Products'
-            }
-          ]
+          park: _.cloneDeep(parkedPages),
+          types: _.cloneDeep(parkedPageTypes)
         },
         'products': {
           extend: 'apostrophe-pieces',
@@ -300,22 +254,7 @@ describe('Apostrophe Sitemap: workflow: hostname and prefixes without perLocale'
           extend: 'apostrophe-pieces-pages'
         },
         'apostrophe-workflow': {
-          locales: [
-            {
-              name: 'default',
-              private: true,
-              children: [
-                {
-                  name: 'fr',
-                  label: 'French'
-                },
-                {
-                  name: 'en',
-                  label: 'English'
-                }
-              ]
-            }
-          ],
+          locales: _.cloneDeep(workflowLocales),
           hostnames: {
             'fr': 'exemple.fr',
             'default': 'example.com',
@@ -419,61 +358,8 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
           perLocale: true
         },
         'apostrophe-pages': {
-          park: [
-            {
-              title: 'Tab One',
-              type: 'default',
-              slug: '/tab-one',
-              _children: [
-                {
-                  title: 'Tab One Child One',
-                  type: 'default',
-                  slug: '/tab-one/child-one'
-                },
-                {
-                  title: 'Tab One Child Two',
-                  type: 'default',
-                  slug: '/tab-one/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Tab Two',
-              type: 'default',
-              slug: '/tab-two',
-              _children: [
-                {
-                  title: 'Tab Two Child One',
-                  type: 'default',
-                  slug: '/tab-two/child-one'
-                },
-                {
-                  title: 'Tab Two Child Two',
-                  type: 'default',
-                  slug: '/tab-two/child-two'
-                },
-              ]
-            },
-            {
-              title: 'Products',
-              type: 'products-page',
-              slug: '/products'
-            }
-          ],
-          types: [
-            {
-              name: 'home',
-              label: 'Home'
-            },
-            {
-              name: 'default',
-              label: 'Default'
-            },
-            {
-              name: 'products',
-              label: 'Products'
-            }
-          ]
+          park: _.cloneDeep(parkedPages),
+          types: _.cloneDeep(parkedPageTypes)
         },
         'products': {
           extend: 'apostrophe-pieces',
@@ -483,22 +369,7 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
           extend: 'apostrophe-pieces-pages'
         },
         'apostrophe-workflow': {
-          locales: [
-            {
-              name: 'default',
-              private: true,
-              children: [
-                {
-                  name: 'fr',
-                  label: 'French'
-                },
-                {
-                  name: 'en',
-                  label: 'English'
-                }
-              ]
-            }
-          ],
+          locales: _.cloneDeep(workflowLocales),
           subdomains: true
         }
       },
@@ -574,6 +445,116 @@ describe('Apostrophe Sitemap: workflow: legacy subdomains option', function() {
     get('http://localhost:7779/sitemaps/default.xml', function(err, xml) {
       assert(err);
       assert(!xml);
+      done();
+    });
+  });
+
+});
+
+describe('Apostrophe Sitemap: workflow: single sitemap with hreflang alternatives', function() {
+
+  var apos;
+
+  this.timeout(5000);
+
+  after(function(done) {
+    try {
+      require('apostrophe/test-lib/util').destroy(apos, done);
+    } catch (e) {
+      console.warn('Old version of apostrophe does not export test-lib/util library, just dropping old test db');
+      apos.db.dropDatabase();
+      setTimeout(done, 1000);
+    }
+  });
+
+  it('perLocale: should be a property of the apos object', function(done) {
+    apos = require('apostrophe')({
+      testModule: true,
+      baseUrl: 'http://localhost:7790',
+      modules: {
+        'apostrophe-express': {
+          port: 7790
+        },
+        'apostrophe-site-map': {},
+        'apostrophe-pages': {
+          park: _.cloneDeep(parkedPages),
+          types: _.cloneDeep(parkedPageTypes)
+        },
+        'products': {
+          extend: 'apostrophe-pieces',
+          name: 'product'
+        },
+        'products-pages': {
+          extend: 'apostrophe-pieces-pages'
+        },
+        'apostrophe-workflow': {
+          locales: _.cloneDeep(workflowLocales),
+          hostnames: {
+            'fr': 'exemple.fr',
+            'default': 'example.com',
+            'en': 'example.com'
+          },
+          prefixes: {
+            // Even private locales must be distinguishable by hostname and/or prefix
+            'default': '/default',
+            'en': '/en'
+            // We don't need prefixes for fr because
+            // that hostname is not shared with other
+            // locales
+          }
+        }
+      },
+      afterInit: function(callback) {
+        assert(apos.modules['apostrophe-site-map']);
+        assert(apos.modules['apostrophe-workflow']);
+        return callback(null);
+      },
+      afterListen: function(err) {
+        done();
+      }
+    });
+  });
+
+  it('should generate <xhtml:link hreflang> tags', function(done) {
+    this.timeout(10000);
+    get('http://localhost:7790/sitemap.xml', function(err, xml) {
+      if (err) {
+        console.error(err);
+      }
+      assert(!err);
+      assert(xml);
+
+      var $ = cheerio.load(xml, { xmlMode: true });
+
+      var urlTags = $('url').map(function() {
+        return {
+          loc: $(this).find('loc').text(),
+          xhtmlLinks: $(this).find('xhtml\\:link').map(function() {
+            return {
+              hreflang: $(this).attr('hreflang'),
+              href: $(this).attr('href')
+            };
+          }).get()
+        };
+      }).get();
+
+      assert.deepEqual(urlTags, [
+        {
+          loc: 'http://exemple.fr/',
+          xhtmlLinks: [
+            { hreflang: 'fr', href: 'http://exemple.fr/' },
+            { hreflang: 'en', href: 'http://example.com/en/' }
+          ]
+        },
+        {
+          loc: 'http://example.com/en/',
+          xhtmlLinks: [
+            { hreflang: 'en', href: 'http://example.com/en/' },
+            { hreflang: 'fr', href: 'http://exemple.fr/' }
+          ]
+        }
+      ]);
+
       done();
     });
   });
