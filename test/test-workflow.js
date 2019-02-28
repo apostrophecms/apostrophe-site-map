@@ -467,7 +467,7 @@ describe('Apostrophe Sitemap: workflow: single sitemap with hreflang alternative
     }
   });
 
-  it('perLocale: should be a property of the apos object', function(done) {
+  it('should initialize', function(done) {
     apos = require('apostrophe')({
       testModule: true,
       baseUrl: 'http://localhost:7790',
