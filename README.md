@@ -205,6 +205,16 @@ Alternatively, you can set the `sitemap` option to `false` when configuring any 
 
 You can also explicitly set it to `true` if you wish to have sitemaps for a piece type that is normally excluded, like `apostrophe-users`. Of course this will only help if they have a `_url` property when fetched, usually via a corresponding module that extends `apostrophe-pieces-pages`.
 
+## Removing the `siteMapPriority` field globally
+
+You may wish to not include the `siteMapPriority` field on any pieces or pages. To do do add a `noPriority` option set to `true` when configuring `apostrophe-site-map` in your `app.js`:
+
+```javascript
+  {
+    'apostrophe-site-map': { noPriority: true }
+  }
+```
+
 ## Integration with the `apostrophe-workflow` module
 
 If you are using the `apostrophe-workflow` module, the sitemap module will automatically fetch content for the live versions of all configured locales.
