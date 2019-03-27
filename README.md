@@ -207,7 +207,7 @@ You can also explicitly set it to `true` if you wish to have sitemaps for a piec
 
 ## Removing the `siteMapPriority` field globally
 
-You may wish to not include the `siteMapPriority` field on any pieces or pages. To do do add a `noPriority` option set to `true` when configuring `apostrophe-site-map` in your `app.js`:
+You may wish to not include the `siteMapPriority` field on any pieces or pages. To do this, add a `noPriority` option set to `true` when configuring `apostrophe-site-map` in your `app.js`:
 
 ```javascript
   {
