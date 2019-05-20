@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.1
+
+Fixes a bug in the `exclude-types` argument usage.
+
 ## 2.5.0
 
 Added a configuration option to remove `siteMapPriority` field globally
