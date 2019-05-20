@@ -69,10 +69,6 @@ module.exports = {
 
       var argv = self.apos.argv;
 
-      if (argv['exclude-types']) {
-        self.excludeTypes = excludeTypes.concat(argv['exclude-types'].split(','));
-      }
-
       if (self.caching) {
         self.cacheOutput = [];
       }
@@ -93,7 +89,13 @@ module.exports = {
         self.format = argv.format || options.format || 'xml';
 
         self.indent = (typeof(argv.indent) !== 'undefined') ? argv.indent : options.indent;
+
         self.excludeTypes = options.excludeTypes || [];
+
+        if (argv['exclude-types']) {
+          self.excludeTypes = self.excludeTypes.concat(argv['exclude-types'].split(','));
+        }
+
         self.perLocale = options.perLocale || argv['per-locale'];
         // Exception: plaintext sitemaps and sitemap indexes don't go
         // together, so we can presume that if they explicitly ask
