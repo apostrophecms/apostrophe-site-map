@@ -1,6 +1,6 @@
 {
   "name": "apostrophe-site-map",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "description": "Generate site maps for sites powered by the Apostrophe CMS.",
   "main": "index.js",
   "dependencies": {
@@ -25,12 +25,9 @@
     "sitemap",
     "apostrophe",
     "apostrophecms",
-    "apostrophe-cms",
-    "cms",
-    "content management",
-    "content management system"
+    "apostrophe-cms"
   ],
-  "author": "P'unk Avenue LLC",
+  "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/apostrophecms/apostrophe-site-map/issues"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.3
+
+Disables the `siteMapPriority` schema field on the `trash` page to prevent an "unarranged field" warning about it.
+
 ## 2.5.1
 
 Fixes a bug in the `exclude-types` argument usage.
