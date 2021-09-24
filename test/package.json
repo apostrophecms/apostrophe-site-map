@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "apostrophe": "^2.0.0",
+    "apostrophe-site-map": "^2.0.0",
+    "apostrophe-workflow": "^2.0.0"
+  }
+}

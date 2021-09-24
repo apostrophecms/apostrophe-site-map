@@ -242,3 +242,18 @@ modules: {
   }
 }
 ```
+
+## Rewriting URLs
+
+Normally the URLs output by this module are just what you'll want. However if Apostrophe is acting as a headless backend the URLs generated in the sitemap will point to that backend site and not necessarily to the right public URL. To customize the URLs, override the `rewriteUrl` method at project level, like this:
+
+```javascript
+// in your lib/modules/apostrophe-site-map/index.js file at project level
+// (do not alter it in node_modules)
+module.exports = {
+  construct(self, options) {
+    self.rewriteUrl = url => {
+      return url.replace('https://onesite.com', 'https://anothersite.com');
+    };
+  }
+};

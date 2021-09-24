@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+Introduced a `rewriteUrl` method, which project developers can override to customize the URLs being output in the sitemap.
+
 ## 2.5.3
 
 Disables the `siteMapPriority` schema field on the `trash` page to prevent an "unarranged field" warning about it.

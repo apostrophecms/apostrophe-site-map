@@ -477,10 +477,10 @@ module.exports = {
               self.write(locale, '  ');
             }
 
-            self.write(locale, page._url + '\n');
+            self.write(locale, self.rewriteUrl(page._url) + '\n');
           }
         } else {
-          url = page._url;
+          url = self.rewriteUrl(page._url);
           var priority = (page.level < 10) ? (1.0 - page.level / 10) : 0.1;
 
           if (typeof (page.siteMapPriority) === 'number') {
@@ -573,5 +573,13 @@ module.exports = {
     self.enableCache = function() {
       self.cache = self.apos.caches.get('apostrophe-sitemap');
     };
+
+    // Override this method at project level to customize the URLs output in the sitemap.
+    // Useful in headless applications where the URLs visible to Apostrophe,
+    // acting as a backend, differ from those visible to the public
+
+    self.rewriteUrl = url => {
+      return url;
+    }
   }
 };
