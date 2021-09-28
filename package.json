@@ -6,7 +6,8 @@
   "dependencies": {
     "@sailshq/lodash": "^3.10.3",
     "async": "^1.5.2",
-    "moment": "^2.24.0"
+    "moment": "^2.24.0",
+    "node-fetch": "^2.6.5"
   },
   "devDependencies": {
     "apostrophe": "^2.85.0",

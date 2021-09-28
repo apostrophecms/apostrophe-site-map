@@ -4,6 +4,7 @@ var async = require('async');
 var request = require('request');
 var cheerio = require('cheerio');
 var fs = require('fs');
+const get = require('./lib/get');
 
 var parkedPages = [
   {
@@ -561,11 +562,3 @@ describe('Apostrophe Sitemap: workflow: single sitemap with hreflang alternative
 
 });
 
-function get(url, callback) {
-  return request(url, function(err, response, body) {
-    if (err || (response.statusCode >= 400)) {
-      return callback(err || response.statusCode);
-    }
-    return callback(null, body);
-  });
-}

@@ -3,6 +3,7 @@ var _ = require('@sailshq/lodash');
 var async = require('async');
 var request = require('request');
 var fs = require('fs');
+const get = require('./lib/get');
 
 describe('Apostrophe Sitemap: simple site without workflow', function() {
 
@@ -161,12 +162,3 @@ describe('Apostrophe Sitemap: simple site without workflow', function() {
   });
 
 });
-
-function get(url, callback) {
-  return request(url, function(err, response, body) {
-    if (err || (response.statusCode >= 400)) {
-      return callback(err || response.statusCode);
-    }
-    return callback(null, body);
-  });
-}
