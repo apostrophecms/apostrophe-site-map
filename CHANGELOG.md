@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.6.0 (2021-10-13)
 
 Introduced a `rewriteUrl` method, which project developers can override to customize the URLs being output in the sitemap.
 
