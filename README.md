@@ -257,3 +257,8 @@ module.exports = {
     };
   }
 };
+
+
+## Getting pages tree
+
+In order to build a sitemap page, you can use the method `self.getPagesTree` from this module. It returns the nested pages and pieces pages in the right order. For each page you can access the array `_children` recursively to render the pages links at the right level.
