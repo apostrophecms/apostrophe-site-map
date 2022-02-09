@@ -221,15 +221,13 @@ module.exports = {
     };
 
     self.getPieces = function(req, locale, callback) {
-      var modules = _.filter(self.apos.modules, function(module, name) {
-        return _.find(module.__meta.chain, function(entry) {
-          return entry.name === 'apostrophe-pieces';
-        });
-      });
+      const modules = self.getPiecesModules();
+
       return async.eachSeries(modules, function(module, callback) {
         if (_.includes(self.excludeTypes, module.name)) {
           return setImmediate(callback);
         }
+
         // Paginate through 100 (by default) at a time to
         // avoid slamming memory
         var done = false;
@@ -237,36 +235,51 @@ module.exports = {
         return async.whilst(
           function() { return !done; },
           function(callback) {
-          return self.findPieces(req, module).skip(skip).limit(self.piecesPerBatch).toArray(function(err, pieces) {
-            _.each(pieces, function(piece) {
-              if (!piece._url) {
-                // This one has no page to be viewed on
-                return;
-              }
-              // Results in a reasonable priority relative
-              // to regular pages
-              piece.level = 3;
-              // Future events are interesting,
-              // past events are boring
-              if (piece.startDate) {
-                if (piece.startDate > self.today) {
-                  piece.level--;
-                } else {
-                  piece.level++;
+
+          return self.findPieces(req, module)
+            .skip(skip)
+            .limit(self.piecesPerBatch)
+            .toArray(function(err, pieces) {
+              _.each(pieces, function(piece) {
+
+
+
+                if (!piece._url) {
+                  // This one has no page to be viewed on
+                  return;
                 }
+
+
+                // Results in a reasonable priority relative
+                // to regular pages
+                piece.level = 3;
+                // Future events are interesting,
+                // past events are boring
+                if (piece.startDate) {
+                  if (piece.startDate > self.today) {
+                    piece.level--;
+                  } else {
+                    piece.level++;
+                  }
+                }
+                self.output(piece);
+              });
+              if (!pieces.length) {
+                done = true;
+              } else {
+                skip += pieces.length;
               }
-              self.output(piece);
-            });
-            if (!pieces.length) {
-              done = true;
-            } else {
-              skip += pieces.length;
-            }
-            return callback(null);
+              return callback(null);
           });
         }, callback);
       }, callback);
     };
+
+    self.getPiecesModules = () => {
+      return Object.values(self.apos.modules).filter((mod) => {
+        return mod.__meta.chain.some((meta) => meta.name === 'apostrophe-pieces')
+      })
+    }
 
     self.writeSitemap = function(callback) {
       if (!self.perLocale) {
@@ -444,8 +457,8 @@ module.exports = {
       return callback(null);
     };
 
-    self.findPieces = function(req, module) {
-      return module.find(req).published(true).joins(false).areas(false);
+    self.findPieces = function(req, module, projection = {}) {
+      return module.find(req, {}, projection).published(true).joins(false).areas(false);
     };
 
     // Output the sitemap entry for the given doc, including its children if any.
@@ -580,6 +593,152 @@ module.exports = {
 
     self.rewriteUrl = url => {
       return url;
-    }
+    };
+
+    self.getPagesTree = async (req) => {
+      self.maps = {};
+      const excludedTypes = [
+        'workflow-document',
+        ...self.options.excludeTypes || []
+      ]
+
+      const pages = await getPages();
+      const pagesWithPieces = await getPieces(pages);
+      const pagesTree = buildPagesTree(pagesWithPieces);
+
+      return pagesTree;
+
+      async function getPages () {
+        try {
+          const pages = await self.apos.pages
+            .find(req, {}, {
+              _id: 1,
+              title: 1,
+              slug: 1,
+              path: 1,
+              level: 1,
+              rank: 1,
+              _url: 1
+            })
+            .areas(false)
+            .joins(false)
+            .sort({
+              level: -1,
+              rank: -1
+            })
+            .toArray();
+
+          return pages
+            .filter((page) => !excludedTypes.includes(page.type))
+            .map((page) => ({
+              ...page,
+              _children: []
+            }));
+        } catch (err) {
+          self.apos.utils.error(err);
+        }
+      }
+
+      async function getPieces (pages) {
+        const piecesModules = self.getPiecesModules();
+
+        for (const mod of piecesModules) {
+          if (excludedTypes.includes(mod.name)) {
+            continue;
+          }
+
+          const modulePieces = [];
+          await fetchPieces(req, {
+            mod,
+            skip: 0,
+            modulePieces
+          });
+
+          modulePieces.forEach((piece) => {
+            if (!piece._url || pages.some((page) => page._url === piece._url)) {
+              return;
+            }
+
+            if (!piece._parentUrl) {
+              pages.push(piece);
+            } else {
+              pages.forEach((page) => {
+                if (page._url === piece._parentUrl) {
+                  page._children.push(piece);
+                }
+              });
+            }
+          });
+        }
+
+        return pages;
+
+        async function fetchPieces (req, {
+          mod, skip, modulePieces
+        }) {
+          try {
+            const fetchedPieces = await self.findPieces(req, mod, { _id: 1, title: 1, _url: 1 })
+              .skip(skip)
+              .limit(self.piecesPerBatch)
+              .toArray();
+
+
+            if (!Array.isArray(fetchedPieces)) {
+              return;
+            }
+
+              console.log('fetchedPieces[0] ===> ', require('util').inspect(fetchedPieces[0], { colors: true, depth: 2 }))
+
+            fetchedPieces.forEach(piece => {
+              if (piece._url && !excludedTypes.includes(piece.type)) {
+                modulePieces.push(piece);
+              }
+            });
+
+            if (fetchedPieces.length) {
+              await fetchPieces(req, {
+                mod,
+                skip: skip + fetchedPieces.length,
+                modulePieces
+              });
+            }
+
+          } catch (err) {
+            self.apos.utils.error(err);
+          }
+        }
+      }
+
+      function buildPagesTree (pages) {
+        const homeTree = pages.find((page) => {
+          // When on the Home page (the latest item) we just return it with all its children
+          if (page.path === '/') {
+            return page;
+          }
+
+          const last = page.path.lastIndexOf('/');
+          const parentPath = page.path.substr(0, last) || '/';
+
+          const parent = pages.find((p) => p.path === parentPath);
+
+          if (parent) {
+            parent._children = [
+              page,
+              ...parent._children || []
+            ];
+          }
+
+          return false;
+        });
+
+        const children = homeTree._children;
+        homeTree._children = [];
+
+        return [
+          homeTree,
+          ...children
+        ];
+      }
+    };
   }
 };
