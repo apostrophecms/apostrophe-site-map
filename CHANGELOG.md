@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Adds new `getPagesTree` method that returns the nested pages in the right order with pieces that are also pages. To be able to build a sitemap page from any project.
+
 ## 2.6.0 (2021-10-13)
 
 Introduced a `rewriteUrl` method, which project developers can override to customize the URLs being output in the sitemap.
