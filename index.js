@@ -687,8 +687,6 @@ module.exports = {
               return;
             }
 
-              console.log('fetchedPieces[0] ===> ', require('util').inspect(fetchedPieces[0], { colors: true, depth: 2 }))
-
             fetchedPieces.forEach(piece => {
               if (piece._url && !excludedTypes.includes(piece.type)) {
                 modulePieces.push(piece);
