@@ -592,7 +592,6 @@ module.exports = {
     };
 
     self.getPageTree = async (req) => {
-      self.maps = {};
       const excludedTypes = [
         'workflow-document',
         ...self.options.excludeTypes || []
@@ -601,7 +600,7 @@ module.exports = {
       const pages = await getPages();
       const pagesWithPieces = await getPieces(pages);
 
-      return pagesWithPieces;
+      return rewriteUrls(pagesWithPieces);
 
       async function getPages () {
         try {
@@ -708,6 +707,19 @@ module.exports = {
             ]
           }, [])
         }
+      }
+
+      function rewriteUrls (pages = []) {
+        return pages.reduce((acc, page) => {
+          return [
+            ...acc,
+            {
+              ...page,
+              _url: self.rewriteUrl(page._url),
+              _children: rewriteUrls(page._children)
+            }
+          ]
+        }, [])
       }
     };
   }
