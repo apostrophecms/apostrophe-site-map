@@ -241,14 +241,10 @@ module.exports = {
             .limit(self.piecesPerBatch)
             .toArray(function(err, pieces) {
               _.each(pieces, function(piece) {
-
-
-
                 if (!piece._url) {
                   // This one has no page to be viewed on
                   return;
                 }
-
 
                 // Results in a reasonable priority relative
                 // to regular pages
@@ -595,7 +591,7 @@ module.exports = {
       return url;
     };
 
-    self.getPagesTree = async (req) => {
+    self.getPageTree = async (req) => {
       self.maps = {};
       const excludedTypes = [
         'workflow-document',
@@ -604,36 +600,39 @@ module.exports = {
 
       const pages = await getPages();
       const pagesWithPieces = await getPieces(pages);
-      const pagesTree = buildPagesTree(pagesWithPieces);
 
-      return pagesTree;
+      return pagesWithPieces;
 
       async function getPages () {
         try {
-          const pages = await self.apos.pages
-            .find(req, {}, {
-              _id: 1,
-              title: 1,
-              slug: 1,
-              path: 1,
-              level: 1,
-              rank: 1,
-              _url: 1
-            })
-            .areas(false)
-            .joins(false)
-            .sort({
-              level: -1,
-              rank: -1
-            })
-            .toArray();
+          const projection =  {
+            _id: 1,
+            title: 1,
+            type: 1,
+            slug: 1,
+            path: 1,
+            rank: 1,
+            level: 1
+          }
 
-          return pages
-            .filter((page) => !excludedTypes.includes(page.type))
-            .map((page) => ({
-              ...page,
+          const criteria = {
+            type: {
+              $nin: excludedTypes
+            }
+          }
+
+          const homePage = await self.apos.pages
+          .find(req, { level: 0 }, projection)
+          .children({ depth: 1000, orphan: null, projection, and: criteria })
+          .toObject();
+
+          return [
+            {
+              ...homePage,
               _children: []
-            }));
+            },
+            ...homePage._children
+          ]
         } catch (err) {
           self.apos.utils.error(err);
         }
@@ -641,40 +640,24 @@ module.exports = {
 
       async function getPieces (pages) {
         const piecesModules = self.getPiecesModules();
+        const pieces = [];
 
         for (const mod of piecesModules) {
           if (excludedTypes.includes(mod.name)) {
             continue;
           }
 
-          const modulePieces = [];
           await fetchPieces(req, {
             mod,
             skip: 0,
-            modulePieces
-          });
-
-          modulePieces.forEach((piece) => {
-            if (!piece._url || pages.some((page) => page._url === piece._url)) {
-              return;
-            }
-
-            if (!piece._parentUrl) {
-              pages.push(piece);
-            } else {
-              pages.forEach((page) => {
-                if (page._url === piece._parentUrl) {
-                  page._children.push(piece);
-                }
-              });
-            }
+            pieces
           });
         }
 
-        return pages;
+        return insertPieces(pages, pieces)
 
         async function fetchPieces (req, {
-          mod, skip, modulePieces
+          mod, skip, pieces
         }) {
           try {
             const fetchedPieces = await self.findPieces(req, mod, { _id: 1, title: 1, _url: 1 })
@@ -682,14 +665,13 @@ module.exports = {
               .limit(self.piecesPerBatch)
               .toArray();
 
-
             if (!Array.isArray(fetchedPieces)) {
               return;
             }
 
             fetchedPieces.forEach(piece => {
               if (piece._url && !excludedTypes.includes(piece.type)) {
-                modulePieces.push(piece);
+                pieces.push(piece);
               }
             });
 
@@ -697,45 +679,35 @@ module.exports = {
               await fetchPieces(req, {
                 mod,
                 skip: skip + fetchedPieces.length,
-                modulePieces
+                pieces
               });
             }
-
           } catch (err) {
             self.apos.utils.error(err);
           }
         }
-      }
 
-      function buildPagesTree (pages) {
-        const homeTree = pages.find((page) => {
-          // When on the Home page (the latest item) we just return it with all its children
-          if (page.path === '/') {
-            return page;
-          }
+        function insertPieces (pages, pieces) {
+          return pages.reduce((acc, page) => {
+            const filledChildren = page._children.length
+              ? insertPieces(page._children, pieces)
+              : page._children
 
-          const last = page.path.lastIndexOf('/');
-          const parentPath = page.path.substr(0, last) || '/';
+            const childrenPieces = pieces
+              .filter((piece) => piece._parentUrl === page._url)
 
-          const parent = pages.find((p) => p.path === parentPath);
-
-          if (parent) {
-            parent._children = [
-              page,
-              ...parent._children || []
-            ];
-          }
-
-          return false;
-        });
-
-        const children = homeTree._children;
-        homeTree._children = [];
-
-        return [
-          homeTree,
-          ...children
-        ];
+            return [
+              ...acc,
+              {
+                ...page,
+                _children: [
+                  ...filledChildren,
+                  ...childrenPieces
+                ]
+              }
+            ]
+          }, [])
+        }
       }
     };
   }
