@@ -594,7 +594,8 @@ module.exports = {
     self.getPageTree = async (req) => {
       const excludedTypes = [
         'workflow-document',
-        ...self.options.excludeTypes || []
+        ...self.options.excludeTypes || [],
+        ...self.options.excludeTypesFromPageTree || [],
       ]
 
       const pages = await getPages();
