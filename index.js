@@ -221,15 +221,13 @@ module.exports = {
     };
 
     self.getPieces = function(req, locale, callback) {
-      var modules = _.filter(self.apos.modules, function(module, name) {
-        return _.find(module.__meta.chain, function(entry) {
-          return entry.name === 'apostrophe-pieces';
-        });
-      });
+      const modules = self.getPiecesModules();
+
       return async.eachSeries(modules, function(module, callback) {
         if (_.includes(self.excludeTypes, module.name)) {
           return setImmediate(callback);
         }
+
         // Paginate through 100 (by default) at a time to
         // avoid slamming memory
         var done = false;
@@ -237,36 +235,47 @@ module.exports = {
         return async.whilst(
           function() { return !done; },
           function(callback) {
-          return self.findPieces(req, module).skip(skip).limit(self.piecesPerBatch).toArray(function(err, pieces) {
-            _.each(pieces, function(piece) {
-              if (!piece._url) {
-                // This one has no page to be viewed on
-                return;
-              }
-              // Results in a reasonable priority relative
-              // to regular pages
-              piece.level = 3;
-              // Future events are interesting,
-              // past events are boring
-              if (piece.startDate) {
-                if (piece.startDate > self.today) {
-                  piece.level--;
-                } else {
-                  piece.level++;
+
+          return self.findPieces(req, module)
+            .skip(skip)
+            .limit(self.piecesPerBatch)
+            .toArray(function(err, pieces) {
+              _.each(pieces, function(piece) {
+                if (!piece._url) {
+                  // This one has no page to be viewed on
+                  return;
                 }
+
+                // Results in a reasonable priority relative
+                // to regular pages
+                piece.level = 3;
+                // Future events are interesting,
+                // past events are boring
+                if (piece.startDate) {
+                  if (piece.startDate > self.today) {
+                    piece.level--;
+                  } else {
+                    piece.level++;
+                  }
+                }
+                self.output(piece);
+              });
+              if (!pieces.length) {
+                done = true;
+              } else {
+                skip += pieces.length;
               }
-              self.output(piece);
-            });
-            if (!pieces.length) {
-              done = true;
-            } else {
-              skip += pieces.length;
-            }
-            return callback(null);
+              return callback(null);
           });
         }, callback);
       }, callback);
     };
+
+    self.getPiecesModules = () => {
+      return Object.values(self.apos.modules).filter((mod) => {
+        return mod.__meta.chain.some((meta) => meta.name === 'apostrophe-pieces')
+      })
+    }
 
     self.writeSitemap = function(callback) {
       if (!self.perLocale) {
@@ -444,8 +453,8 @@ module.exports = {
       return callback(null);
     };
 
-    self.findPieces = function(req, module) {
-      return module.find(req).published(true).joins(false).areas(false);
+    self.findPieces = function(req, module, projection = {}) {
+      return module.find(req, {}, projection).published(true).joins(false).areas(false);
     };
 
     // Output the sitemap entry for the given doc, including its children if any.
@@ -580,6 +589,139 @@ module.exports = {
 
     self.rewriteUrl = url => {
       return url;
-    }
+    };
+
+    self.getPageTree = async (req) => {
+      const excludedTypes = [
+        'workflow-document',
+        ...self.options.excludeTypes || [],
+        ...self.options.excludeTypesFromPageTree || [],
+      ]
+
+      const pages = await getPages();
+      const pagesWithPieces = await getPieces(pages);
+
+      return rewriteUrls(pagesWithPieces);
+
+      async function getPages () {
+        try {
+          const projection =  {
+            _id: 1,
+            title: 1,
+            type: 1,
+            slug: 1,
+            path: 1,
+            rank: 1,
+            level: 1
+          }
+
+          const criteria = {
+            type: {
+              $nin: excludedTypes
+            }
+          }
+
+          const homePage = await self.apos.pages
+          .find(req, { level: 0 }, projection)
+          .children({ depth: 1000, orphan: null, projection, and: criteria })
+          .toObject();
+
+          return [
+            {
+              ...homePage,
+              _children: []
+            },
+            ...homePage._children
+          ]
+        } catch (err) {
+          self.apos.utils.error(err);
+        }
+      }
+
+      async function getPieces (pages) {
+        const piecesModules = self.getPiecesModules();
+        const pieces = [];
+
+        for (const mod of piecesModules) {
+          if (excludedTypes.includes(mod.name)) {
+            continue;
+          }
+
+          await fetchPieces(req, {
+            mod,
+            skip: 0,
+            pieces
+          });
+        }
+
+        return insertPieces(pages, pieces)
+
+        async function fetchPieces (req, {
+          mod, skip, pieces
+        }) {
+          try {
+            const fetchedPieces = await self.findPieces(req, mod, { _id: 1, title: 1, _url: 1 })
+              .skip(skip)
+              .limit(self.piecesPerBatch)
+              .toArray();
+
+            if (!Array.isArray(fetchedPieces)) {
+              return;
+            }
+
+            fetchedPieces.forEach(piece => {
+              if (piece._url && !excludedTypes.includes(piece.type)) {
+                pieces.push(piece);
+              }
+            });
+
+            if (fetchedPieces.length) {
+              await fetchPieces(req, {
+                mod,
+                skip: skip + fetchedPieces.length,
+                pieces
+              });
+            }
+          } catch (err) {
+            self.apos.utils.error(err);
+          }
+        }
+
+        function insertPieces (pages, pieces) {
+          return pages.reduce((acc, page) => {
+            const filledChildren = page._children.length
+              ? insertPieces(page._children, pieces)
+              : page._children
+
+            const childrenPieces = pieces
+              .filter((piece) => piece._parentUrl === page._url)
+
+            return [
+              ...acc,
+              {
+                ...page,
+                _children: [
+                  ...filledChildren,
+                  ...childrenPieces
+                ]
+              }
+            ]
+          }, [])
+        }
+      }
+
+      function rewriteUrls (pages = []) {
+        return pages.reduce((acc, page) => {
+          return [
+            ...acc,
+            {
+              ...page,
+              _url: self.rewriteUrl(page._url),
+              _children: rewriteUrls(page._children)
+            }
+          ]
+        }, [])
+      }
+    };
   }
 };

@@ -257,3 +257,24 @@ module.exports = {
     };
   }
 };
+```
+
+## Getting the page tree programmatically
+
+This module's primary purpose is creating a sitemap for Google and other search engines, but it is also useful in creating a sitemap for end users.
+
+In order to build a sitemap page, you can use the method `self.getPageTree` from this module. It returns the nested pages and pieces pages in the right order. For each page you can access the array `_children` recursively to render the pages links at the right level.
+
+This method has a large performance impact each time it is called on a site with a large page tree, or many pieces reachable via pieces-pages. Strongly consider caching the response for a period of time.
+
+It is possible to exclude some pages or pieces types only for the page tree, without impacting the normal `sitemap.xml` generation.
+The `excludeTypes` option will exclude types from the sitemap file and from the `getPageTree` method.
+The `excludeTypesFromPageTree` option will exclude types only from the `getPageTree` method.
+
+```javascript
+  {
+    'apostrophe-site-map': {
+      excludeTypesFromPageTree: [ 'article' ]
+    }
+  }
+```
