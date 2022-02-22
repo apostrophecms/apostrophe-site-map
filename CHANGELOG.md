@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.8.0 (2021-02-22)
 
 Adds new `getPageTree` method that returns the nested pages in the right order with pieces that are also pages. To be able to build a sitemap page from any project.
 
