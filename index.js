@@ -402,10 +402,14 @@ module.exports = {
     };
 
     self.writeXmlMap = function(file, map) {
-      self.writeFile(file,
-        '<?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' +
-        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
+      self.writeFile( file,
+        '<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' +
+        'xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 ' +
+        'http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd ' +
+        'http://www.w3.org/TR/xhtml11/xhtml11_schema.html ' +
+        'http://www.w3.org/2002/08/xhtml/xhtml1-strict.xsd" ' +
+        'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" ' +
+        'xmlns:xhtml="http://www.w3.org/TR/xhtml11/xhtml11_schema.html">\n' +
         map +
         '</urlset>\n'
       );
