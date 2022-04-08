@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-Sitemaps now appear as XML source rather than awkwardly rendered text when viewed in the browser. There was never a problem with the XML from Google's perspective, but this improves the developer experience. Thanks to [norbie-nagy](https://github.com/norbie-nagy) for constributing this improvement.
+Sitemaps now appear as XML source rather than awkwardly rendered text when viewed in the browser. There was never a problem with the XML from Google's perspective, but this improves the developer experience. Thanks to [norbie-nagy](https://github.com/norbie-nagy) for contributing this improvement.
 
 ## 2.8.0 (2021-02-22)
 
