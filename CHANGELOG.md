@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+Sitemaps now appear as XML source rather than awkwardly rendered text when viewed in the browser. There was never a problem with the XML from Google's perspective, but this improves the developer experience. Thanks to [norbie-nagy](https://github.com/norbie-nagy) for constributing this improvement.
+
 ## 2.8.0 (2021-02-22)
 
 Adds new `getPageTree` method that returns the nested pages in the right order with pieces that are also pages. To be able to build a sitemap page from any project.
