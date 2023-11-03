@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.9.0 (2023-11-03)
 
 Sitemaps now appear as XML source rather than awkwardly rendered text when viewed in the browser. There was never a problem with the XML from Google's perspective, but this improves the developer experience. Thanks to [norbie-nagy](https://github.com/norbie-nagy) for contributing this improvement.
 
